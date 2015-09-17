@@ -15,6 +15,11 @@ class DumbAgent(object):
         self.commands = []
         self.obstacles = bzrc.get_obstacles
         self.angles_are_initialized = False
+        for flag in self.bzrc.get_flags:
+			if flag.color = current_tank.color:
+				self.flag_home = flag
+			else:
+				self.flag_goal = flag
 
         self.targetAngle = 0
         self.lastAngle = 0
@@ -31,6 +36,37 @@ class DumbAgent(object):
         self.lastAngle = tank.angle
         self.targetAngle = self.normalize_angle(0.5) # change this to reflect goal
         self.angles_are_initialized = True
+        
+    def calculate_obstacles_force(self):
+		d = 50 # maximum radius of influence
+		x_force = 0
+		y_force = 0
+		
+		for obstacle in self.obstacles:
+			average_x = 0
+			average_y = 0
+			total_points = 0
+			for point in obstacle:
+				average_x += obstacle[0]
+				average_y += obstacle[1]
+				total_points += 1
+			average_x /= total_points # x coordinate of object center
+			average_y /= total_points # y coordinate of object center
+			
+			r = 0 # furthest point from object center
+			for point in obstacle:
+				temp = math.sqrt(point[0] ** 2 + point[1] ** 2)
+				r = temp if temp > r
+				
+			tank_distance = math.sqrt(self.current_tank.x ** 2 + self.current_tank.y ** 2)
+			if tank_distance > d + r:
+				continue
+				
+			# if we're within radius of influence
+				# x_force += pdcontroller type function
+				# y_force += pdcontroller type function
+			
+			return (x_force, y_force)
 
     def calculate_angvel(self):
         target = self.two_pi_normalize(self.targetAngle)
