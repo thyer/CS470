@@ -7,7 +7,7 @@ This should get some of the boilerplate out of the way for you in visualizing
 your potential fields.
 
 Notably absent from this code is anything dealing with vectors, the
-interaction of mutliple fields, etc. Your code will be a lot easier if you
+interaction of multiple fields, etc. Your code will be a lot easier if you
 define your potential fields in terms of vectors (angle, magnitude). For
 plotting, however, you'll need to turn them back into dx and dy.
 """

@@ -11,7 +11,11 @@ from bzrc import BZRC, Command
 class PFAgent(object):
     def __init__(self, bzrc):
         self.bzrc = bzrc
-        self.current_tank = self.bzrc.get_mytanks()[0]
+        self.mytanks = self.bzrc.get_mytanks()
+
+        # TODO: Do we really need this variable? Only used in setting self.flag_home and self.flag_goal below (line 23)
+        self.current_tank = self.mytanks[0]
+
         self.commands = []
         self.obstacles = self.bzrc.get_obstacles()
         self.angles_are_initialized = False
@@ -27,25 +31,33 @@ class PFAgent(object):
 
     def tick(self, time_diff):
         self.commands = []
+
+        for tank in self.mytanks:
+            x_force, y_force = self.get_forces_on_tank(tank, 1, 1, 1, 1)
+            # TODO: perform the commands to move the tank
+
+    def get_forces_on_tank(self, tank, frob_o, frob_g, frob_t, frob_r):
+        forces = []
         x_force = 0
         y_force = 0
-        # Chloe, do you know how to make these three lines less verbose? Seems like it should be a one-liner
-        forces = self.calculate_obstacles_force(self.current_tank)
-        x_force += forces[0]
-        y_force += forces[1]
-        # calculate x, y force from goal
-        forces = self.calculate_goal_force(self.current_tank)
-        x_force += forces[0]
-        y_force += forces[1]
-        # calculate x, y force from tangential field
-        # calculate x, y force from random field
+
+        forces.append(self.calculate_obstacles_force(tank, frob_o))
+        forces.append(self.calculate_goal_force(tank, frob_g))
+        # TODO: calculate x, y force from tangential field, use frob_t
+        # TODO: calculate x, y force from random field, use frob_r
+
+        for force in forces:
+            x_force += force[0]
+            y_force += force[1]
+
+        return x_force, y_force
 
     def init_angles(self, tank):
         self.lastAngle = tank.angle
         self.targetAngle = self.normalize_angle(0.5) # change this to reflect goal
         self.angles_are_initialized = True
 
-    def calculate_goal_force(self, tank):
+    def calculate_goal_force(self, tank, frob):
         if self.has_flag:
             goal = self.flag_home
         else:
@@ -54,9 +66,9 @@ class PFAgent(object):
         x_force = tank.x - goal.x
         y_force = tank.y - goal.y
 
-        return [x_force, y_force]
+        return [x_force * frob, y_force * frob]
 
-    def calculate_obstacles_force(self, tank):
+    def calculate_obstacles_force(self, tank, frob):
         x_force = 0
         y_force = 0
         for obstacle in self.obstacles:
@@ -64,7 +76,7 @@ class PFAgent(object):
             x_force += forces[0]
             y_force += forces[1]
 
-        return [x_force, y_force]
+        return [x_force * frob, y_force * frob]
 
     def get_obstacle_force(self, obstacle, tank):
         d = 50  # maximum radius of influence
@@ -94,7 +106,7 @@ class PFAgent(object):
         # if we're within radius of influence
         return [d / d_x, d/d_y]
 
-    def calculate_tangential_force(self, tank):
+    def calculate_tangential_force(self, tank, frob):
         x_force = 0
         y_force = 0
         for obstacle in self.obstacles:
@@ -104,11 +116,11 @@ class PFAgent(object):
             angle = self.normalize_angle(angle + 1.57)  # adds 90 degrees, normalizes angle
             x_force += magnitude * math.cos(angle)
             y_force += magnitude * math.sin(angle)
-        return [x_force, y_force]
+        return [x_force * frob, y_force * frob]
 
-    def calculate_angvel(self):
+    def calculate_angvel(self, tank):
         target = self.two_pi_normalize(self.targetAngle)
-        current = self.two_pi_normalize(self.current_tank.angle)
+        current = self.two_pi_normalize(self.tank.angle)
         last = self.two_pi_normalize(self.lastAngle)
         return (target - current) - (current - last)
 
