@@ -13,7 +13,7 @@ class PFAgent(object):
         self.bzrc = bzrc
         self.current_tank = self.bzrc.get_mytanks()[0]
         self.commands = []
-        self.obstacles = bzrc.get_obstacles
+        self.obstacles = self.bzrc.get_obstacles()
         self.angles_are_initialized = False
 
         for flag in self.bzrc.get_flags():
