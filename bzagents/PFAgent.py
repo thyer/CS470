@@ -34,7 +34,13 @@ class PFAgent(object):
 
         for tank in self.mytanks:
             x_force, y_force = self.get_forces_on_tank(tank, 1, 1, 1, 1)
-            # TODO: perform the commands to move the tank
+            magnitude = math.sqrt(x_force ** 2 + y_force ** 2)
+            self.targetAngle = math.tan2(y_force, x_force)
+            command = Command(tank.index, magnitude, self.calculate_angvel(tank), False)
+            self.commands.append(command)
+
+        if self.commands:
+            self.bzrc.do_commands(self.commands)
 
     def get_forces_on_tank(self, tank, frob_o, frob_g, frob_t, frob_r):
         forces = []
@@ -43,8 +49,8 @@ class PFAgent(object):
 
         forces.append(self.calculate_obstacles_force(tank, frob_o))
         forces.append(self.calculate_goal_force(tank, frob_g))
-        # TODO: calculate x, y force from tangential field, use frob_t
-        # TODO: calculate x, y force from random field, use frob_r
+        forces.append(self.calculate_tangential_force(tank, frob_t))
+        forces.append(self.calculate_random_force(frob_r))
 
         for force in forces:
             x_force += force[0]
@@ -118,11 +124,13 @@ class PFAgent(object):
             y_force += magnitude * math.sin(angle)
         return [x_force * frob, y_force * frob]
 
+    def calculate_random_force(self, frob):
+        return [random.randint[1, 10 * frob], random.randint[1, 10 * frob]]
+
     def calculate_angvel(self, tank):
         target = self.two_pi_normalize(self.targetAngle)
-        current = self.two_pi_normalize(self.tank.angle)
-        last = self.two_pi_normalize(self.lastAngle)
-        return (target - current) - (current - last)
+        current = self.two_pi_normalize(tank.angle)
+        return target - current
 
     def normalize_angle(self, angle):
         """Make any angle be between +/- pi."""
