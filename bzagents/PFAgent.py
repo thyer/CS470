@@ -94,6 +94,18 @@ class PFAgent(object):
         # if we're within radius of influence
         return [d / d_x, d/d_y]
 
+    def calculate_tangential_force(self, tank):
+        x_force = 0
+        y_force = 0
+        for obstacle in self.obstacles:
+            forces = self.get_obstacle_force(obstacle, tank)
+            angle = math.atan2(forces[1], forces[0])
+            magnitude = math.sqrt(forces[0] ** 2 + forces[1] ** 2)
+            angle = self.normalize_angle(angle + 1.57)  # adds 90 degrees, normalizes angle
+            x_force += magnitude * math.cos(angle)
+            y_force += magnitude * math.sin(angle)
+        return [x_force, y_force]
+
     def calculate_angvel(self):
         target = self.two_pi_normalize(self.targetAngle)
         current = self.two_pi_normalize(self.current_tank.angle)
