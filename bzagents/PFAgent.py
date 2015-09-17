@@ -15,7 +15,7 @@ class PFAgent(object):
         self.commands = []
         self.obstacles = self.bzrc.get_obstacles()
         self.angles_are_initialized = False
-
+        self.has_flag = False
         for flag in self.bzrc.get_flags():
             if str(flag.color) in str(self.current_tank.callsign):
                 self.flag_home = flag
@@ -37,6 +37,12 @@ class PFAgent(object):
         self.lastAngle = tank.angle
         self.targetAngle = self.normalize_angle(0.5) # change this to reflect goal
         self.angles_are_initialized = True
+
+    def calculate_goal_force(self):
+        if self.has_flag:
+            goal = self.flag_home
+        else:
+            goal = self.flag_goal
 
     def calculate_obstacles_force(self):
         d = 50 # maximum radius of influence
