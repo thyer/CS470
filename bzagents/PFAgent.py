@@ -108,7 +108,10 @@ class PFAgent(object):
         tank_distance = math.sqrt((d_x) ** 2 + (d_y) ** 2)
         if tank_distance > d + r:
             return [0,0]
-
+        if d_x < r:
+            d_x = r
+        if d_y < r:
+            d_y = r
         # if we're within radius of influence
         return [d / d_x, d/d_y]
 
