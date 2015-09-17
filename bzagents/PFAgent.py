@@ -35,7 +35,7 @@ class PFAgent(object):
         for tank in self.mytanks:
             x_force, y_force = self.get_forces_on_tank(tank, 1, 1, 1, 1)
             magnitude = math.sqrt(x_force ** 2 + y_force ** 2)
-            self.targetAngle = math.tan2(y_force, x_force)
+            self.targetAngle = math.atan2(y_force, x_force)
             command = Command(tank.index, magnitude, self.calculate_angvel(tank), False)
             self.commands.append(command)
 
@@ -50,7 +50,7 @@ class PFAgent(object):
         forces.append(self.calculate_obstacles_force(tank, frob_o))
         forces.append(self.calculate_goal_force(tank, frob_g))
         forces.append(self.calculate_tangential_force(tank, frob_t))
-        forces.append(self.calculate_random_force(frob_r))
+        forces.append(self.calculate_random_force(tank, frob_r))
 
         for force in forces:
             x_force += force[0]
@@ -106,7 +106,7 @@ class PFAgent(object):
         d_x = average_x - tank.x
         d_y = average_y - tank.y
         tank_distance = math.sqrt((d_x) ** 2 + (d_y) ** 2)
-        angle = math.tan2(d_y, d_x)
+        angle = math.atan2(d_y, d_x)
         if tank_distance > d + r:
             return [0, 0]
         # if we're within radius of influence
@@ -124,7 +124,7 @@ class PFAgent(object):
             y_force += magnitude * math.sin(angle)
         return [x_force * frob, y_force * frob]
 
-    def calculate_random_force(self, frob):
+    def calculate_random_force(self, tank, frob):
         return [random.randint[1, 10 * frob], random.randint[1, 10 * frob]]
 
     def calculate_angvel(self, tank):
