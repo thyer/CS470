@@ -34,9 +34,11 @@ class PFAgent(object):
         x_force += forces[0]
         y_force += forces[1]
         # calculate x, y force from goal
+        forces = self.calculate_goal_force(self.current_tank)
+        x_force += forces[0]
+        y_force += forces[1]
         # calculate x, y force from tangential field
         # calculate x, y force from random field
-
 
     def init_angles(self, tank):
         self.lastAngle = tank.angle
@@ -55,37 +57,42 @@ class PFAgent(object):
         return [x_force, y_force]
 
     def calculate_obstacles_force(self, tank):
-        d = 50  # maximum radius of influence
         x_force = 0
         y_force = 0
         for obstacle in self.obstacles:
-            average_x = 0
-            average_y = 0
-            total_points = 0
-            for point in obstacle:
-                average_x += point[0]
-                average_y += point[1]
-                total_points += 1
-            average_x /= total_points   # x coordinate of object center
-            average_y /= total_points   # y coordinate of object center
-
-            r = 0   # radius of circle
-            for point in obstacle:
-                temp = math.sqrt(point[0] ** 2 + point[1] ** 2)
-                if temp > r:
-                    r = temp
-
-            d_x = tank.x - average_x
-            d_y = tank.y - average_y
-            tank_distance = math.sqrt((d_x) ** 2 + (d_y) ** 2)
-            if tank_distance > d + r:
-                continue
-
-            # if we're within radius of influence
-            x_force += d / d_x
-            y_force += d / d_y
+            forces = self.get_obstacle_force(obstacle, tank)
+            x_force += forces[0]
+            y_force += forces[1]
 
         return [x_force, y_force]
+
+    def get_obstacle_force(self, obstacle, tank):
+        d = 50  # maximum radius of influence
+        r = 0   # radius of circle
+        average_x = 0
+        average_y = 0
+        total_points = 0
+
+        for point in obstacle:
+            average_x += point[0]
+            average_y += point[1]
+            total_points += 1
+        average_x /= total_points   # x coordinate of object center
+        average_y /= total_points   # y coordinate of object center
+
+        for point in obstacle:
+            temp = math.sqrt(point[0] ** 2 + point[1] ** 2)
+            if temp > r:
+                r = temp
+
+        d_x = tank.x - average_x
+        d_y = tank.y - average_y
+        tank_distance = math.sqrt((d_x) ** 2 + (d_y) ** 2)
+        if tank_distance > d + r:
+            return [0,0]
+
+        # if we're within radius of influence
+        return [d / d_x, d/d_y]
 
     def calculate_angvel(self):
         target = self.two_pi_normalize(self.targetAngle)
