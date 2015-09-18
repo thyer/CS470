@@ -25,15 +25,21 @@ class PFAgent(object):
         self.T_FROB = 1
         self.R_FROB = 0.3
 
+        bases = self.bzrc.get_bases()
+        for base in bases:
+            if str(base.color) in str(self.ourCallsign):
+                # this is our base
+                center_x = (base.corner1_x + base.corner3_x) / 2
+                center_y = (base.corner1_y + base.corner3_y) / 2
+                self.flag_home = HomeBase(center_x, center_y)
+
     def tick(self):
         self.commands = []
 
         flags = self.bzrc.get_flags()
         self.has_flag = False
         for flag in flags:
-            if str(flag.color) in str(self.ourCallsign):
-                self.flag_home = flag
-            else:
+            if not str(flag.color) in str(self.ourCallsign):
                 self.flag_goal = flag
             if str(flag.poss_color) in str(self.ourCallsign):
                 self.has_flag = True
@@ -148,7 +154,7 @@ class PFAgent(object):
     def calculate_angvel(self, tank):
         target = self.two_pi_normalize(self.targetAngle)
         current = self.two_pi_normalize(tank.angle)
-        return target - current
+        return self.normalize_angle(target - current)
 
     def normalize_angle(self, angle):
         """Make any angle be between +/- pi."""
@@ -163,6 +169,11 @@ class PFAgent(object):
         """Make any angle between 0 to 2pi."""
         angle += 2 * math.pi
         return angle % (2 * math.pi)
+
+class HomeBase(object):
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
 
 def main():
     # Process CLI arguments.
