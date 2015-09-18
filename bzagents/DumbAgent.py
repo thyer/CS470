@@ -7,8 +7,23 @@ import math
 
 from bzrc import BZRC, Command
 
-
 class DumbAgent(object):
+    def __init__(self, bzrc):
+        self.bzrc = bzrc
+        self.tank_commanders = {}
+
+    def tick(self, time_diff):
+        mytanks = self.bzrc.get_mytanks()
+        for tank in mytanks:
+            if not self.tank_commanders.has_key(tank.index):
+                commander = TankCommander(self.bzrc)
+                self.tank_commanders[tank.index] = commander
+
+            tc = self.tank_commanders.get(tank.index)
+            tc.tick(time_diff, tank)
+
+
+class TankCommander(object):
     def __init__(self, bzrc):
         self.bzrc = bzrc
         self.commands = []
@@ -23,15 +38,11 @@ class DumbAgent(object):
         self.targetAngle = 0
         self.lastAngle = 0
         self.currentAngle = 0
-        self.mytanks = []
 
-    def tick(self, time_diff):
+    def tick(self, time_diff, current_tank):
         self.seconds_since_last_move += time_diff
         self.seconds_since_last_shot += time_diff
         self.commands = []
-
-        self.mytanks = self.bzrc.get_mytanks()
-        current_tank = self.mytanks[0]
 
         if self.is_turning:
             if not self.angles_are_initialized:

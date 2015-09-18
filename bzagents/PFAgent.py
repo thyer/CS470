@@ -52,7 +52,7 @@ class PFAgent(object):
 
             # randomly shoot
             should_shoot = False
-            if random.random() < .001:
+            if random.random() < .01:
                 should_shoot = True
 
             command = Command(tank.index, magnitude, self.calculate_angvel(tank), should_shoot)
