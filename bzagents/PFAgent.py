@@ -30,20 +30,23 @@ class PFAgent(object):
         self.lastAngle = 0
 
         # frobbing constants
-        self.O_FROB = 0.08
-        self.G_FROB = 0.15
-        self.T_FROB = 0.03
+        self.O_FROB = 0.8
+        self.G_FROB = 0.1
+        self.T_FROB = 1
         self.R_FROB = 0.03
 
     def tick(self, time_diff):
         self.commands = []
 
-        for tank in self.mytanks:
-            x_force, y_force = self.get_forces_on_tank(tank)
-            magnitude = math.sqrt(x_force ** 2 + y_force ** 2)
-            self.targetAngle = math.atan2(y_force, x_force)
-            command = Command(tank.index, magnitude, self.calculate_angvel(tank), False)
-            self.commands.append(command)
+        tank = self.mytanks[0]
+        # for tank in self.mytanks:
+        x_force, y_force = self.get_forces_on_tank(tank)
+        magnitude = math.sqrt(x_force ** 2 + y_force ** 2)
+        self.targetAngle = math.atan2(y_force, x_force)
+        print(self.targetAngle)
+        command = Command(tank.index, magnitude, self.calculate_angvel(tank), False)
+        # print(command.speed, command.angvel)
+        self.commands.append(command)
 
         if self.commands:
             self.bzrc.do_commands(self.commands)
@@ -88,6 +91,7 @@ class PFAgent(object):
             x_force += forces[0]
             y_force += forces[1]
 
+
         return [x_force * self.O_FROB, y_force * self.O_FROB]
 
     def get_obstacle_force(self, obstacle, tank):
@@ -104,8 +108,9 @@ class PFAgent(object):
         average_x /= total_points   # x coordinate of object center
         average_y /= total_points   # y coordinate of object center
 
+
         for point in obstacle:
-            temp = math.sqrt(point[0] ** 2 + point[1] ** 2)
+            temp = math.sqrt((average_x - point[0]) ** 2 + (average_y - point[1]) ** 2)
             if temp > r:
                 r = temp
 
