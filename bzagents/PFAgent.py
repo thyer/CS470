@@ -26,9 +26,9 @@ class PFAgent(object):
         self.lastAngle = 0
 
         # frobbing constants
-        self.O_FROB = 0.35
-        self.G_FROB = 0.25
-        self.T_FROB = .4
+        self.O_FROB = 1.5
+        self.G_FROB = 0.1
+        self.T_FROB = 1
         self.R_FROB = 0.3
 
     def tick(self):
@@ -79,8 +79,9 @@ class PFAgent(object):
         else:
             goal = self.flag_goal
 
-        x_force = goal.x - tank.x
-        y_force = goal.y - tank.y
+        x_force = min(goal.x - tank.x, 200)
+        y_force = min(goal.y - tank.y, 200)
+
 
         return [x_force * self.G_FROB, y_force * self.G_FROB]
 
@@ -95,8 +96,8 @@ class PFAgent(object):
 
         return [x_force * self.O_FROB, y_force * self.O_FROB]
 
-    def get_obstacle_force(self, obstacle, tank):
-        d = 25  # maximum radius of influence
+    def get_obstacle_force(self, obstacle, tank, use_exponential=True):
+        d = 0  # maximum radius of influence
         r = 0   # radius of circle
         average_x = 0
         average_y = 0
@@ -114,21 +115,28 @@ class PFAgent(object):
             temp = math.sqrt((average_x - point[0]) ** 2 + (average_y - point[1]) ** 2)
             if temp > r:
                 r = temp
+                d = r + 20
 
         d_x = average_x - tank.x
         d_y = average_y - tank.y
         tank_distance = math.sqrt((d_x) ** 2 + (d_y) ** 2)
         angle = math.atan2(d_y, d_x)
-        if tank_distance > d + r:
+        if tank_distance > d:
             return [0, 0]
+
         # if we're within radius of influence
-        return [-1 * (d + r - tank_distance) ** 3 * math.cos(angle)/5000, -1 * (d + r - tank_distance) ** 3 * math.sin(angle)/5000]
+        mag = d - tank_distance
+
+        if not use_exponential:
+            return [mag * math.cos(angle), mag * math.sin(angle)]
+
+        return [-1 * (mag * abs(mag)) * math.cos(angle)/50, -1 * (mag * abs(mag)) * math.sin(angle)/50]
 
     def calculate_tangential_force(self, tank):
         x_force = 0
         y_force = 0
         for obstacle in self.obstacles:
-            forces = self.get_obstacle_force(obstacle, tank)
+            forces = self.get_obstacle_force(obstacle, tank, False)
             angle = math.atan2(forces[1], forces[0])
             magnitude = math.sqrt(forces[0] ** 2 + forces[1] ** 2)
             angle = self.normalize_angle(angle + 1.57)  # adds 90 degrees, normalizes angle
