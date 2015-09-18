@@ -30,7 +30,7 @@ class PFAgent(object):
         self.lastAngle = 0
 
         # frobbing constants
-        self.O_FROB = 1
+        self.O_FROB = 0.1
         self.G_FROB = 1
         self.T_FROB = 1
         self.R_FROB = 1
