@@ -44,7 +44,7 @@ def show_arrows(plot, potential_func, xlim=(-400, 400), ylim=(-400, 400), res=20
     plot.set_ylim(ylim)
     for x in range(xlim[0], xlim[1] + res, res):
         for y in range(ylim[0], ylim[1] + res, res):
-            force = potential_func(DummyTank(x, y), 1)
+            force = potential_func(DummyTank(x,  y))
             dx = force[0]
             dy = force[1]
             if dx + dy == 0: continue
@@ -68,6 +68,7 @@ class DummyTank(object):
          self.x = x
          self.y = y
 
+
 def main():
     # Process CLI arguments.
     try:
@@ -87,6 +88,8 @@ def main():
     plot_single(agent.calculate_goal_force, agent.obstacles, 'goal.png')
     plot_single(agent.calculate_random_force, agent.obstacles, 'random.png')
     plot_single(agent.calculate_tangential_force, agent.obstacles, 'tangential.png')
+
+    plot_single(agent.get_forces_on_tank, agent.obstacles, 'combined.png')
 
     print("finished")
     bzrc.close()

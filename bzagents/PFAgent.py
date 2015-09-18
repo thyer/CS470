@@ -29,11 +29,17 @@ class PFAgent(object):
         self.targetAngle = 0
         self.lastAngle = 0
 
+        # frobbing constants
+        self.O_FROB = 1
+        self.G_FROB = 1
+        self.T_FROB = 1
+        self.R_FROB = 1
+
     def tick(self, time_diff):
         self.commands = []
 
         for tank in self.mytanks:
-            x_force, y_force = self.get_forces_on_tank(tank, 1, 1, 1, 1)
+            x_force, y_force = self.get_forces_on_tank(tank)
             magnitude = math.sqrt(x_force ** 2 + y_force ** 2)
             self.targetAngle = math.atan2(y_force, x_force)
             command = Command(tank.index, magnitude, self.calculate_angvel(tank), False)
@@ -42,15 +48,15 @@ class PFAgent(object):
         if self.commands:
             self.bzrc.do_commands(self.commands)
 
-    def get_forces_on_tank(self, tank, frob_o, frob_g, frob_t, frob_r):
+    def get_forces_on_tank(self, tank):
         forces = []
         x_force = 0
         y_force = 0
 
-        forces.append(self.calculate_obstacles_force(tank, frob_o))
-        forces.append(self.calculate_goal_force(tank, frob_g))
-        forces.append(self.calculate_tangential_force(tank, frob_t))
-        forces.append(self.calculate_random_force(tank, frob_r))
+        forces.append(self.calculate_obstacles_force(tank))
+        forces.append(self.calculate_goal_force(tank))
+        forces.append(self.calculate_tangential_force(tank))
+        forces.append(self.calculate_random_force(tank))
 
         for force in forces:
             x_force += force[0]
@@ -63,7 +69,7 @@ class PFAgent(object):
         self.targetAngle = self.normalize_angle(0.5) # change this to reflect goal
         self.angles_are_initialized = True
 
-    def calculate_goal_force(self, tank, frob):
+    def calculate_goal_force(self, tank):
         if self.has_flag:
             goal = self.flag_home
         else:
@@ -72,9 +78,9 @@ class PFAgent(object):
         x_force = goal.x - tank.x
         y_force = goal.y - tank.y
 
-        return [x_force * frob, y_force * frob]
+        return [x_force * self.G_FROB, y_force * self.G_FROB]
 
-    def calculate_obstacles_force(self, tank, frob):
+    def calculate_obstacles_force(self, tank):
         x_force = 0
         y_force = 0
         for obstacle in self.obstacles:
@@ -82,7 +88,7 @@ class PFAgent(object):
             x_force += forces[0]
             y_force += forces[1]
 
-        return [x_force * frob, y_force * frob]
+        return [x_force * self.O_FROB, y_force * self.O_FROB]
 
     def get_obstacle_force(self, obstacle, tank):
         d = 50  # maximum radius of influence
@@ -112,7 +118,7 @@ class PFAgent(object):
         # if we're within radius of influence
         return [-1 * (d - tank_distance) * math.cos(angle), -1 * (d - tank_distance) * math.sin(angle)]
 
-    def calculate_tangential_force(self, tank, frob):
+    def calculate_tangential_force(self, tank):
         x_force = 0
         y_force = 0
         for obstacle in self.obstacles:
@@ -122,10 +128,10 @@ class PFAgent(object):
             angle = self.normalize_angle(angle + 1.57)  # adds 90 degrees, normalizes angle
             x_force += magnitude * math.cos(angle)
             y_force += magnitude * math.sin(angle)
-        return [x_force * frob, y_force * frob]
+        return [x_force * self.T_FROB, y_force * self.T_FROB]
 
-    def calculate_random_force(self, tank, frob):
-        return [random.randint(-10, 10) * frob, random.randint(-10, 10) * frob]
+    def calculate_random_force(self, tank):
+        return [random.randint(-10, 10) * self.R_FROB, random.randint(-10, 10) * self.R_FROB]
 
     def calculate_angvel(self, tank):
         target = self.two_pi_normalize(self.targetAngle)
