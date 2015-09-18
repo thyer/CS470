@@ -41,12 +41,17 @@ class PFAgent(object):
                 self.has_flag = True
 
         mytanks = self.bzrc.get_mytanks()
-        tank = mytanks[0]
         for tank in mytanks:
             x_force, y_force = self.get_forces_on_tank(tank)
             magnitude = math.sqrt(x_force ** 2 + y_force ** 2)
             self.targetAngle = math.atan2(y_force, x_force)
-            command = Command(tank.index, magnitude, self.calculate_angvel(tank), False)
+
+            # randomly shoot
+            should_shoot = False
+            if random.random() < .001:
+                should_shoot = True
+
+            command = Command(tank.index, magnitude, self.calculate_angvel(tank), should_shoot)
             self.commands.append(command)
 
         if self.commands:
