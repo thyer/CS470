@@ -16,12 +16,6 @@ class PFAgent(object):
         self.has_flag = False
 
         self.ourCallsign = self.bzrc.get_mytanks()[0].callsign
-        for flag in self.bzrc.get_flags():
-            if str(flag.color) in str(self.ourCallsign):
-                self.flag_home = flag
-            else:
-                self.flag_goal = flag
-
         self.targetAngle = 0
         self.lastAngle = 0
 
@@ -37,6 +31,10 @@ class PFAgent(object):
         flags = self.bzrc.get_flags()
         self.has_flag = False
         for flag in flags:
+            if str(flag.color) in str(self.ourCallsign):
+                self.flag_home = flag
+            else:
+                self.flag_goal = flag
             if str(flag.poss_color) in str(self.ourCallsign):
                 self.has_flag = True
 
