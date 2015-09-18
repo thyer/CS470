@@ -125,7 +125,7 @@ class PFAgent(object):
         return [x_force * frob, y_force * frob]
 
     def calculate_random_force(self, tank, frob):
-        return [random.randint(-10, 10 * frob), random.randint(-10, 10 * frob)]
+        return [random.randint(-10, 10) * frob, random.randint(-10, 10) * frob]
 
     def calculate_angvel(self, tank):
         target = self.two_pi_normalize(self.targetAngle)
