@@ -85,7 +85,7 @@ def main():
 
     plot_single(agent.calculate_obstacles_force, agent.obstacles, 'obstacles.png')
     plot_single(agent.calculate_goal_force, agent.obstacles, 'goal.png')
-    # plot_single(agent.calculate_random_force, agent.obstacles, 'random.png')
+    plot_single(agent.calculate_random_force, agent.obstacles, 'random.png')
     plot_single(agent.calculate_tangential_force, agent.obstacles, 'tangential.png')
 
     print("finished")
