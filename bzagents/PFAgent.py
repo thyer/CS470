@@ -11,16 +11,13 @@ from bzrc import BZRC, Command
 class PFAgent(object):
     def __init__(self, bzrc):
         self.bzrc = bzrc
-        self.mytanks = self.bzrc.get_mytanks()
-
-        # TODO: Do we really need this variable? Only used in setting self.flag_home and self.flag_goal below (line 23)
-        self.current_tank = self.mytanks[0]
-
         self.commands = []
         self.obstacles = self.bzrc.get_obstacles()
         self.has_flag = False
+
+        ourCallsign = self.bzrc.get_mytanks()[0].callsign
         for flag in self.bzrc.get_flags():
-            if str(flag.color) in str(self.current_tank.callsign):
+            if str(flag.color) in str(ourCallsign):
                 self.flag_home = flag
             else:
                 self.flag_goal = flag
@@ -34,11 +31,12 @@ class PFAgent(object):
         self.T_FROB = 1
         self.R_FROB = 0.03
 
-    def tick(self, time_diff):
+    def tick(self):
         self.commands = []
 
-        tank = self.mytanks[0]
-        # for tank in self.mytanks:
+        mytanks = self.bzrc.get_mytanks()
+        tank = mytanks[0]
+        # for tank in mytanks:
         x_force, y_force = self.get_forces_on_tank(tank)
         print "Force on tank is X:" + str(x_force) + ", Y:" + str(y_force)
         magnitude = math.sqrt(x_force ** 2 + y_force ** 2)
@@ -46,7 +44,6 @@ class PFAgent(object):
         print("Target Angle: "+ str(self.targetAngle))
         print("Tank Angle: "+ str(tank.angle))
         command = Command(tank.index, magnitude, self.calculate_angvel(tank), False)
-        # print(command.speed, command.angvel)
         self.commands.append(command)
 
         if self.commands:
@@ -177,9 +174,7 @@ def main():
     # Run the agent
     try:
         while True:
-            time_diff = time.time() - prev_time
-            prev_time = time.time()
-            agent.tick(time_diff)
+            agent.tick()
     except KeyboardInterrupt:
         print "Exiting due to keyboard interrupt."
         bzrc.close()
