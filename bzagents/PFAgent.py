@@ -141,6 +141,7 @@ class PFAgent(object):
     def calculate_angvel(self, tank):
         target = self.two_pi_normalize(self.targetAngle)
         current = self.two_pi_normalize(tank.angle)
+        print "Angvel: "+ str(target - current)
         return target - current
 
     def normalize_angle(self, angle):
