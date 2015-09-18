@@ -40,9 +40,11 @@ class PFAgent(object):
         tank = self.mytanks[0]
         # for tank in self.mytanks:
         x_force, y_force = self.get_forces_on_tank(tank)
+        print "Force on tank is X:" + str(x_force) + ", Y:" + str(y_force)
         magnitude = math.sqrt(x_force ** 2 + y_force ** 2)
         self.targetAngle = math.atan2(y_force, x_force)
-        print(self.targetAngle)
+        print("Target Angle: "+ str(self.targetAngle))
+        print("Tank Angle: "+ str(tank.angle))
         command = Command(tank.index, magnitude, self.calculate_angvel(tank), False)
         # print(command.speed, command.angvel)
         self.commands.append(command)
@@ -65,11 +67,6 @@ class PFAgent(object):
             y_force += force[1]
 
         return x_force, y_force
-
-    def init_angles(self, tank):
-        self.lastAngle = tank.angle
-        self.targetAngle = self.normalize_angle(0.5) # change this to reflect goal
-        self.angles_are_initialized = True
 
     def calculate_goal_force(self, tank):
         if self.has_flag:
