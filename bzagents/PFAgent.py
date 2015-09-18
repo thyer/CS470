@@ -15,9 +15,9 @@ class PFAgent(object):
         self.obstacles = self.bzrc.get_obstacles()
         self.has_flag = False
 
-        ourCallsign = self.bzrc.get_mytanks()[0].callsign
+        self.ourCallsign = self.bzrc.get_mytanks()[0].callsign
         for flag in self.bzrc.get_flags():
-            if str(flag.color) in str(ourCallsign):
+            if str(flag.color) in str(self.ourCallsign):
                 self.flag_home = flag
             else:
                 self.flag_goal = flag
@@ -26,25 +26,27 @@ class PFAgent(object):
         self.lastAngle = 0
 
         # frobbing constants
-        self.O_FROB = 0.8
+        self.O_FROB = 0.3
         self.G_FROB = 0.1
         self.T_FROB = 1
-        self.R_FROB = 0.03
+        self.R_FROB = 0.3
 
     def tick(self):
         self.commands = []
 
+        flags = self.bzrc.get_flags()
+        for flag in flags:
+            if str(flag.poss_color) in str(self.ourCallsign):
+                self.has_flag = True
+
         mytanks = self.bzrc.get_mytanks()
         tank = mytanks[0]
-        # for tank in mytanks:
-        x_force, y_force = self.get_forces_on_tank(tank)
-        print "Force on tank is X:" + str(x_force) + ", Y:" + str(y_force)
-        magnitude = math.sqrt(x_force ** 2 + y_force ** 2)
-        self.targetAngle = math.atan2(y_force, x_force)
-        print("Target Angle: "+ str(self.targetAngle))
-        print("Tank Angle: "+ str(tank.angle))
-        command = Command(tank.index, magnitude, self.calculate_angvel(tank), False)
-        self.commands.append(command)
+        for tank in mytanks:
+            x_force, y_force = self.get_forces_on_tank(tank)
+            magnitude = math.sqrt(x_force ** 2 + y_force ** 2)
+            self.targetAngle = math.atan2(y_force, x_force)
+            command = Command(tank.index, magnitude, self.calculate_angvel(tank), False)
+            self.commands.append(command)
 
         if self.commands:
             self.bzrc.do_commands(self.commands)
@@ -73,8 +75,6 @@ class PFAgent(object):
 
         x_force = goal.x - tank.x
         y_force = goal.y - tank.y
-        if (x_force < .01 and y_force < .01):
-            self.has_flag = True
 
         return [x_force * self.G_FROB, y_force * self.G_FROB]
 
@@ -136,7 +136,6 @@ class PFAgent(object):
     def calculate_angvel(self, tank):
         target = self.two_pi_normalize(self.targetAngle)
         current = self.two_pi_normalize(tank.angle)
-        print "Angvel: "+ str(target - current)
         return target - current
 
     def normalize_angle(self, angle):
