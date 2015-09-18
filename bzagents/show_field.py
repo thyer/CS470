@@ -34,12 +34,6 @@ def show_obstacle(plot, points):
 
 
 def show_arrows(plot, potential_func, xlim=(-400, 400), ylim=(-400, 400), res=20):
-    """
-    Arguments:
-        fns: a list of potential field functions
-        xlim, ylim: the limits of the plot
-        res: resolution for (spacing between) arrows
-    """
     plot.set_xlim(xlim)
     plot.set_ylim(ylim)
     for x in range(xlim[0], xlim[1] + res, res):
