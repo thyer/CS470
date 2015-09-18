@@ -27,8 +27,8 @@ class PFAgent(object):
 
         # frobbing constants
         self.O_FROB = 0.35
-        self.G_FROB = 0.5
-        self.T_FROB = .95
+        self.G_FROB = 0.25
+        self.T_FROB = .4
         self.R_FROB = 0.3
 
     def tick(self):
@@ -122,7 +122,7 @@ class PFAgent(object):
         if tank_distance > d + r:
             return [0, 0]
         # if we're within radius of influence
-        return [(d + r - tank_distance) ** 3 * math.cos(angle)/10000, (d + r - tank_distance) ** 3 * math.sin(angle)/10000]
+        return [-1 * (d + r - tank_distance) ** 3 * math.cos(angle)/5000, -1 * (d + r - tank_distance) ** 3 * math.sin(angle)/5000]
 
     def calculate_tangential_force(self, tank):
         x_force = 0
