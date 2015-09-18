@@ -35,6 +35,7 @@ class PFAgent(object):
         self.commands = []
 
         flags = self.bzrc.get_flags()
+        self.has_flag = False
         for flag in flags:
             if str(flag.poss_color) in str(self.ourCallsign):
                 self.has_flag = True
