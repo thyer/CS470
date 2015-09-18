@@ -91,7 +91,7 @@ class PFAgent(object):
         return [x_force * self.O_FROB, y_force * self.O_FROB]
 
     def get_obstacle_force(self, obstacle, tank):
-        d = 50  # maximum radius of influence
+        d = 25  # maximum radius of influence
         r = 0   # radius of circle
         average_x = 0
         average_y = 0
