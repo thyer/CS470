@@ -117,7 +117,7 @@ class PFAgent(object):
         if tank_distance > d + r:
             return [0, 0]
         # if we're within radius of influence
-        return [(d - tank_distance) * math.cos(angle), (d - tank_distance) * math.sin(angle)]
+        return [(d - tank_distance) ** 2 * math.cos(angle)/2, (d - tank_distance) ** 2 * math.sin(angle)/2]
 
     def calculate_tangential_force(self, tank):
         x_force = 0
