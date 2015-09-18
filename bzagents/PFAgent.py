@@ -18,7 +18,6 @@ class PFAgent(object):
 
         self.commands = []
         self.obstacles = self.bzrc.get_obstacles()
-        self.angles_are_initialized = False
         self.has_flag = False
         for flag in self.bzrc.get_flags():
             if str(flag.color) in str(self.current_tank.callsign):
@@ -80,6 +79,8 @@ class PFAgent(object):
 
         x_force = goal.x - tank.x
         y_force = goal.y - tank.y
+        if (x_force < .01 and y_force < .01):
+            self.has_flag = True
 
         return [x_force * self.G_FROB, y_force * self.G_FROB]
 
