@@ -15,12 +15,9 @@ plotting, however, you'll need to turn them back into dx and dy.
 
 import matplotlib.pyplot as plt
 from pylab import *
-import math
-import random
 from PFAgent import PFAgent
 from bzrc import BZRC
 
-from math import atan2, cos, sin, sqrt, pi
 
 
 ##### PLOTTING FUNCTIONS #####
@@ -77,6 +74,7 @@ def main():
     # bzrc = BZRC(host, int(port), debug=True)
     bzrc = BZRC(host, int(port))
     agent = PFAgent(bzrc)
+    agent.tick()
 
     plot_single(agent.calculate_obstacles_force, agent.obstacles, 'obstacles.png')
     plot_single(agent.calculate_goal_force, agent.obstacles, 'goal.png')

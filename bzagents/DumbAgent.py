@@ -27,7 +27,7 @@ class TankCommander(object):
     def __init__(self, bzrc):
         self.bzrc = bzrc
         self.commands = []
-        self.is_turning = True
+        self.is_turning = False
         self.angles_are_initialized = False
 
         self.seconds_since_last_move = 0
