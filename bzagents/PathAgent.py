@@ -61,20 +61,29 @@ class PathAgent(object):
 
     def is_visible(self, point1, point2):
         # check if they share an edge
+        p1_found = False
         for edge in self.edges:
             if point1 in edge:
+                p1_found = True
                 if point2 in edge:
                     return True
+
+        if p1_found:
+            for obstacle in self.bzrc.get_obstacles():
+                if point1 in obstacle and point2 in obstacle:
+                    return False
         
         # if there are no intersecting line segments
+
+        tempEdge = [point1, point2]
         for edge in self.edges:
-            if line_segments_intersect([point1, point2], edge):
+            if self.line_segments_intersect(tempEdge, edge):
                 return False
         
         # no edges intersected
         return True
         
-    def line_segments_intersect(edge1, edge2):
+    def line_segments_intersect(self, edge1, edge2):
         x = 0
         y = 1
         
@@ -84,9 +93,9 @@ class PathAgent(object):
         p1 = edge1[0]
         p2 = edge1[1]
         
-        cp1 = (f[x]-e[x])(p1[y]-f[y]) - (f[y] - e[y])(p1[x] - f[x])
-        cp2 = (f[x]-e[x])(p2[y]-f[y]) - (f[y] - e[y])(p2[x] - f[x])
-        if (cp1 > 0 and cp2 > 0) or (cp1 < 0 and cp2 < 0):
+        cp1 = (f[x]-e[x]) * (p1[y]-f[y]) - (f[y] - e[y]) * (p1[x] - f[x])
+        cp2 = (f[x]-e[x]) * (p2[y]-f[y]) - (f[y] - e[y]) * (p2[x] - f[x])
+        if (cp1 > 0 and cp2 > 0) or (cp1 < 0 and cp2 < 0) or cp1 == 0 or cp2 == 0:
             return False
         
         # crossproduct 3, 4: check points in edge 2 are on opposite sides of edge 1
@@ -95,14 +104,14 @@ class PathAgent(object):
         p1 = edge2[0]
         p2 = edge2[1]
         
-        cp1 = (f[x]-e[x])(p1[y]-f[y]) - (f[y] - e[y])(p1[x] - f[x])
-        cp2 = (f[x]-e[x])(p2[y]-f[y]) - (f[y] - e[y])(p2[x] - f[x])
-        if (cp1 > 0 and cp2 > 0) or (cp1 < 0 and cp2 < 0):
+        cp1 = (f[x]-e[x]) * (p1[y]-f[y]) - (f[y] - e[y]) * (p1[x] - f[x])
+        cp2 = (f[x]-e[x]) * (p2[y]-f[y]) - (f[y] - e[y]) * (p2[x] - f[x])
+        if (cp1 > 0 and cp2 > 0) or (cp1 < 0 and cp2 < 0) or cp1 == 0 or cp2 == 0:
             return False        
         return True
         
     def print_visibility_graph(self):
-        for row in self.visibility_graph:
+        for row in self.visibilityGraph:
             print row
 
 def main():
