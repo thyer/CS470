@@ -13,30 +13,51 @@ class PathAgent(object):
         self.bzrc = bzrc
         self.commands = []
         self.points = []
+        self.visibilityGraph = None
         self.index = index
+        self.counter = 0
         
 
     def tick(self, time_diff):
-        print "tick"
+        if self.counter == 0:
+            self.create_visibility_graph()
+        self.counter += 1
 
     def create_visibility_graph(self):
-        tank = bzrc.get_tanks()[index]
+        tank = self.bzrc.get_mytanks()[self.index]
         # append tank position to points
-        self.points.append([tank.x, tank.y])
+        self.points.append((tank.x, tank.y))
         
         # append goal flag position to points
-        flags = bzrc.get_flags()
+        flags = self.bzrc.get_flags()
         for flag in flags:
             if not flag.color in tank.callsign:
-                self.points.append([flag.x, flag.y])
+                self.points.append((flag.x, flag.y))
                 break
                 
         # append obstacle points
-        for obstacle in bzrc.get_obstacles()
+        for obstacle in self.bzrc.get_obstacles():
             for point in obstacle:
                 self.points.append(point)
-                
-        print self.points
+
+        length = len(self.points)
+        self.visibilityGraph = [[-1 for x in range(length)] for x in range(length)]
+
+        for col in range(length):
+            for row in range(length):
+                if self.visibilityGraph[row][col] == -1:
+                    if row == col:
+                        self.visibilityGraph[row][col] = 0
+                    elif self.is_visible(self.points[col], self.points[row]):
+                        self.visibilityGraph[row][col] = 1
+                    else:
+                        self.visibilityGraph[row][col] = 0
+
+        print self.visibilityGraph
+
+    def is_visible(self, point1, point2):
+        return True
+
 def main():
     # Process CLI arguments.
     try:
