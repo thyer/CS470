@@ -26,13 +26,10 @@ class PathAgent(object):
         
         # append goal flag position to points
         flags = bzrc.get_flags()
-        f = 0
         for flag in flags:
             if not flag.color in tank.callsign:
-                if self.index % 3 == f:
-                    self.points.append([flag.x, flag.y])
-                    break
-                f += 1
+                self.points.append([flag.x, flag.y])
+                break
                 
         # append obstacle points
         for obstacle in bzrc.get_obstacles()
