@@ -1,31 +1,29 @@
 #!/usr/bin/python -tt
 
 import sys
-import random
 import time
-import math
 
 from bzrc import BZRC, Command
 
 
 class PathAgent(object):
-    def __init__(self, bzrc, index):
+    def __init__(self, bzrc, tank_index):
         self.bzrc = bzrc
-        self.commands = []
         self.points = []
         self.edges = []
-        self.visibilityGraph = None
-        self.index = index
-        self.counter = 0
-        
+        self.tank_index = tank_index
+
+        self.visibility_graph = None
+        self.create_visibility_graph()
+        self.print_visibility_graph()  # TODO: eventually we'll want to remove this
 
     def tick(self, time_diff):
-        if self.counter == 0:
-            self.create_visibility_graph()
-        self.counter += 1
+        # TODO: Make tick actually do something :)
+        return
 
     def create_visibility_graph(self):
-        tank = self.bzrc.get_mytanks()[self.index]
+        tank = self.bzrc.get_mytanks()[self.tank_index]
+
         # append tank position to points
         self.points.append((tank.x, tank.y))
         
@@ -36,30 +34,36 @@ class PathAgent(object):
                 self.points.append((flag.x, flag.y))
                 break
                 
-        # append obstacle points, edges
+        # append obstacle corners to points, and obstacle edges to our list of edges
         for obstacle in self.bzrc.get_obstacles():
             i = 0
             for point in obstacle:
                 self.points.append(point)
-                self.edges.append([point, obstacle[(i+1)%len(obstacle)]])
+                self.edges.append([point, obstacle[(i+1) % len(obstacle)]])
                 i += 1
 
+        # initialize the visibility graph to all -1's
         length = len(self.points)
-        self.visibilityGraph = [[-1 for x in range(length)] for x in range(length)]
+        self.visibility_graph = [[-1 for _ in range(length)] for _ in range(length)]
 
+        # figure out the visibility between each pair of points
         for col in range(length):
             for row in range(length):
-                if self.visibilityGraph[row][col] == -1:
-                    if row == col:
-                        self.visibilityGraph[row][col] = 0
-                    elif self.is_visible(self.points[col], self.points[row]):
-                        self.visibilityGraph[row][col] = 1
+                if self.visibility_graph[row][col] == -1:  # we haven't considered this pair of points yet
+                    if self.is_visible(self.points[col], self.points[row]):
+                        # "if you are visible to me, than I am visible to you" mentality
+                        self.visibility_graph[row][col] = 1
+                        self.visibility_graph[col][row] = 1
                     else:
-                        self.visibilityGraph[row][col] = 0
-
-        self.print_visibility_graph();
+                        # "if you are not visible to me, than I am not visible to you" mentality
+                        self.visibility_graph[row][col] = 0
+                        self.visibility_graph[col][row] = 0
 
     def is_visible(self, point1, point2):
+        # check if they are the same point...a point is not visible to itself
+        if point1 == point2:
+            return False
+
         # check if they share an edge
         p1_found = False
         for edge in self.edges:
@@ -68,51 +72,55 @@ class PathAgent(object):
                 if point2 in edge:
                     return True
 
+        # check if they are both in the same obstacle (but obviously don't share an edge because of the case above)
         if p1_found:
             for obstacle in self.bzrc.get_obstacles():
                 if point1 in obstacle and point2 in obstacle:
                     return False
         
-        # if there are no intersecting line segments
-
-        tempEdge = [point1, point2]
+        # check if there are any intersecting edges between these two points
+        temp_edge = [point1, point2]
         for edge in self.edges:
-            if self.line_segments_intersect(tempEdge, edge):
+            if self.line_segments_intersect(temp_edge, edge):
                 return False
         
-        # no edges intersected
+        # No edges intersected, these two points are visible to each other
         return True
-        
+
+    # Determines if two line segments intersect by checking that the two ends of one segment are on different sides
+    # of the other segment, AND vise-versa (both conditions must be true for the line segments to intersect).
+    # See http://stackoverflow.com/questions/7069420/check-if-two-line-segments-are-colliding-only-check-if-they-are-intersecting-n
+    # for further explanation & math.
     def line_segments_intersect(self, edge1, edge2):
-        x = 0
-        y = 1
-        
-        # crossproduct 1, 2: check points in edge 1 are on opposite sides of edge 2
-        e = edge2[0]
-        f = edge2[1]
-        p1 = edge1[0]
-        p2 = edge1[1]
-        
-        cp1 = (f[x]-e[x]) * (p1[y]-f[y]) - (f[y] - e[y]) * (p1[x] - f[x])
-        cp2 = (f[x]-e[x]) * (p2[y]-f[y]) - (f[y] - e[y]) * (p2[x] - f[x])
+        # if both points of edge1 are on the same side of edge2, or one of edge1's points is on edge2
+        # then we already know the lines aren't crossing over each other.
+        cp1 = self.cross_product(edge1[0], edge2)
+        cp2 = self.cross_product(edge1[1], edge2)
         if (cp1 > 0 and cp2 > 0) or (cp1 < 0 and cp2 < 0) or cp1 == 0 or cp2 == 0:
             return False
-        
-        # crossproduct 3, 4: check points in edge 2 are on opposite sides of edge 1
-        e = edge1[0]
-        f = edge1[1]
-        p1 = edge2[0]
-        p2 = edge2[1]
-        
-        cp1 = (f[x]-e[x]) * (p1[y]-f[y]) - (f[y] - e[y]) * (p1[x] - f[x])
-        cp2 = (f[x]-e[x]) * (p2[y]-f[y]) - (f[y] - e[y]) * (p2[x] - f[x])
+
+        # if both points of edge2 are on the same side of edge1, or one of edge2's endpoints is on edge1
+        # then we know the lines aren't crossing over each other
+        cp1 = self.cross_product(edge2[0], edge1)
+        cp2 = self.cross_product(edge2[1], edge1)
         if (cp1 > 0 and cp2 > 0) or (cp1 < 0 and cp2 < 0) or cp1 == 0 or cp2 == 0:
             return False        
+
         return True
-        
+
+    # Returns the cross product between the given line segment and the vector from that line segment to the given point
+    def cross_product(self, point, segment):
+        seg_start = segment[0]
+        seg_end = segment[1]
+        x = 0
+        y = 1
+
+        return (seg_end[x]-seg_start[x]) * (point[y]-seg_end[y]) - (seg_end[y]-seg_start[y]) * (point[x]-seg_end[x])
+
     def print_visibility_graph(self):
-        for row in self.visibilityGraph:
+        for row in self.visibility_graph:
             print row
+
 
 def main():
     # Process CLI arguments.
