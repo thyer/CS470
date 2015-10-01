@@ -11,16 +11,11 @@ from bzrc import BZRC, Command
 class PathAgent(object):
     def __init__(self, bzrc, tank_index):
         self.bzrc = bzrc
-        self.points = []
         self.obstacles = self.bzrc.get_obstacles()
-        self.edges = []
         self.tank_index = tank_index
         self.O_FROB = 0.05
         self.G_FROB = 0.50
 
-        self.visibility_graph = None
-        self.frontier = []
-        self.visited = []
         self.path = []
         self.has_path = False
         print "running constructor"
