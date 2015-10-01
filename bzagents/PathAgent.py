@@ -28,6 +28,10 @@ class PathAgent(object):
             self.has_path = True
         return
 
+    ########################
+    ### VISIBILITY GRAPH ###
+    ########################
+
     def create_visibility_graph(self):
         print "creating visibility graph"
         tank = self.bzrc.get_mytanks()[self.tank_index]
@@ -138,7 +142,11 @@ class PathAgent(object):
         for row in self.visibility_graph:
             print row
 
-    def begin_search(self):
+    ################################
+    ### SEARCH ALGORITHM HELPERS ###
+    ################################
+
+    def begin_search(self, use_node=False):
         # clear everything
         self.visited = []
         self.frontier = []
@@ -152,14 +160,24 @@ class PathAgent(object):
             print >>sys.stderr, 'attempted search when tank was not part of graph'
 
         # initialize search at the tank's current location
-        self.frontier.append(start)
+        if use_node:
+            self.frontier.append(BFSNode(start, None))
+        else:
+            self.frontier.append(start)
+
+    def is_goal(self, point):
+        return point == self.points[1]  # the goal point is always the second one in our list of points
+
+    ##########################
+    ### DEPTH FIRST SEARCH ###
+    ##########################
 
     def depth_first_search(self):
         print "Entering DFS"
         self.begin_search()
         print "Search initialized"
         if not self.r_dfs(self.frontier[0]):
-            print >>sys.stderr, 'DFS failed to find goal'
+            print >> sys.stderr, 'DFS failed to find goal'
 
     def r_dfs(self, vertex):
         print "Entering R_DFS"
@@ -167,7 +185,7 @@ class PathAgent(object):
         self.visited.append(vertex)
 
         # recursive base case, found the goal
-        if vertex == self.points[1]:
+        if self.is_goal(vertex):
             self.path.append(vertex)
             print "R_DFS found the goal"
             return True
@@ -203,6 +221,59 @@ class PathAgent(object):
                 
         # none of our children in this path returned true
         return False
+
+    ############################
+    ### BREADTH FIRST SEARCH ###
+    ############################
+
+    def breadth_first_search(self):
+        self.begin_search(True)
+
+        while self.frontier:
+            current_node = self.frontier.pop(0)
+            vertex = current_node.my_point
+
+            # find out which (x,y) point we're dealing with
+            try:
+                index = self.points.index(vertex)
+            except:
+                print >>sys.stderr, 'Vertex not found in points'
+                return
+
+            # find the neighbors of this point
+            row = self.visibility_graph[index]
+            for i in range(0, len(row)):
+                neighbor = self.points[i]
+                if row[i] == 1 and neighbor not in self.visited:
+                    if self.is_goal(neighbor):
+                        # If this child is the goal node, we're done!
+                        self.reconstruct_path_from_last_node(BFSNode(neighbor, current_node))
+                        print "BFS finished"
+                        return
+                    else:
+                        # Add this child to the end of the queue
+                        self.frontier.append(BFSNode(neighbor, current_node))
+
+        # If we get to this point, then the frontier became empty before we found the goal
+        print "BFS failed to find the goal"
+
+    def reconstruct_path_from_last_node(self, last_node):
+        self.path = []
+        node = last_node
+        while node:
+            self.path.insert(0, node.my_point)
+            node = node.parent
+
+
+class BFSNode(object):
+    def __init__(self, my_point, parent_point):
+        self.my_point = my_point
+        self.parent = parent_point
+
+
+#####################
+### MAIN FUNCTION ###
+#####################
 
 
 def main():

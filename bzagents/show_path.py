@@ -1,26 +1,9 @@
 #!/usr/bin/env python
 
-"""
-README
-
-This should get some of the boilerplate out of the way for you in visualizing
-your potential fields.
-
-Notably absent from this code is anything dealing with vectors, the
-interaction of multiple fields, etc. Your code will be a lot easier if you
-define your potential fields in terms of vectors (angle, magnitude). For
-plotting, however, you'll need to turn them back into dx and dy.
-"""
-
-
 import matplotlib.pyplot as plt
 from pylab import *
 from PathAgent import PathAgent
 from bzrc import BZRC
-
-
-
-##### PLOTTING FUNCTIONS #####
 
 
 def show_obstacle(plot, points):
@@ -28,6 +11,7 @@ def show_obstacle(plot, points):
     """
     for p1, p2 in zip(points, [points[-1]] + list(points)):
         plot.plot([p1[0], p2[0]], [p1[1], p2[1]], 'b')
+
 
 def show_path(plot, path):
     prev_point = None
@@ -51,6 +35,7 @@ def plot_single(path, obstacles, filename, xlim=(-400, 400), ylim=(-400, 400)):
         show_obstacle(plot, obstacle)
     fig.savefig(filename, format='png')
 
+
 def main():
     # Process CLI arguments.
     try:
@@ -67,7 +52,12 @@ def main():
     agent = PathAgent(bzrc, 0)
 
     agent.depth_first_search()
+    print agent.path
     plot_single(agent.path, bzrc.get_obstacles(), 'dfs.png')
+
+    agent.breadth_first_search()
+    print agent.path
+    plot_single(agent.path, bzrc.get_obstacles(), 'bfs.png')
 
     print("finished")
     bzrc.close()
