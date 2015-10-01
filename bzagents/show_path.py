@@ -2,8 +2,8 @@
 
 import matplotlib.pyplot as plt
 from pylab import *
-from PathAgent import PathAgent
 from bzrc import BZRC
+from PathFinder import PathFinder
 
 
 def show_obstacle(plot, points):
@@ -49,15 +49,16 @@ def main():
     # Connect.
     # bzrc = BZRC(host, int(port), debug=True)
     bzrc = BZRC(host, int(port))
-    agent = PathAgent(bzrc, 0)
 
-    agent.depth_first_search()
-    print agent.path
-    plot_single(agent.path, bzrc.get_obstacles(), 'dfs.png')
+    path_finder = PathFinder(bzrc, 0)
 
-    agent.breadth_first_search()
-    print agent.path
-    plot_single(agent.path, bzrc.get_obstacles(), 'bfs.png')
+    path = path_finder.get_depth_first_search_path()
+    print path
+    plot_single(path, bzrc.get_obstacles(), 'dfs.png')
+
+    path = path_finder.get_breadth_first_search_path()
+    print path
+    plot_single(path, bzrc.get_obstacles(), 'bfs.png')
 
     print("finished")
     bzrc.close()
