@@ -21,13 +21,21 @@ class PathAgent(object):
         print "running constructor"
 
     def tick(self, time_diff):
-        # TODO: Make tick actually do something :)
         if not self.has_path:
+            # get the path by choosing from DFS, BFS, A*, etc.
             self.depth_first_search()
-            print self.path
             self.has_path = True
+        while not len(self.path) == 0:
+            tank = self.bzrc.get_mytanks()[self.tank_index]
+            if (tank.x, tank.y) == self.path[0]:
+                self.path.remove(self.path[0])
+            next_point = self.path[0]
+            self.traverse_path(next_point, tank)
         return
 
+    def traverse_path(self, next_point, tank):
+        print "tank is at" + str(tank.x) + ", " + str(tank.y) + " and moving toward " + str(next_point)
+        
     ########################
     ### VISIBILITY GRAPH ###
     ########################
