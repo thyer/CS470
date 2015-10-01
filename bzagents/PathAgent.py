@@ -1,7 +1,9 @@
 #!/usr/bin/python -tt
 
 import sys
+import random
 import time
+import math
 
 from bzrc import BZRC, Command
 
@@ -21,6 +23,7 @@ class PathAgent(object):
         print "running constructor"
 
     def tick(self, time_diff):
+        self.commands = []
         if not self.has_path:
             # get the path by choosing from DFS, BFS, A*, etc.
             self.depth_first_search()
@@ -34,7 +37,59 @@ class PathAgent(object):
         return
 
     def traverse_path(self, next_point, tank):
-        print "tank is at" + str(tank.x) + ", " + str(tank.y) + " and moving toward " + str(next_point)
+        print "tank is at (" + str(tank.x) + ", " + str(tank.y) + ") and moving toward " + str(next_point)
+        forces = []
+        x_force = 0
+        y_force = 0
+
+        forces.append(self.calculate_obstacles_force(tank))
+        forces.append(self.calculate_goal_force(next_point, tank))
+
+        for force in forces:
+            x_force += force[0]
+            y_force += force[1]
+
+        self.move(x_force, y_force, tank)
+        
+    def calculate_obstacles_force(self, tank):
+        return [0, 0]
+        
+    def calculate_goal_force(self, goal, tank):
+        return [0, 0]
+        
+    def move(self, x_force, y_force, tank):
+        magnitude = math.sqrt(x_force ** 2 + y_force ** 2)
+        targetAngle = math.atan2(y_force, x_force)
+
+        # randomly shoot
+        should_shoot = False
+        if random.random() < .01:
+            should_shoot = True
+
+        command = Command(self.tank_index, magnitude, self.calculate_angvel(tank, targetAngle), should_shoot)
+        self.commands.append(command)
+
+        if self.commands:
+            self.bzrc.do_commands(self.commands)
+            
+    def calculate_angvel(self, tank, targetAngle):
+        targetAngle = self.two_pi_normalize(targetAngle)
+        current = self.two_pi_normalize(tank.angle)
+        return self.normalize_angle(targetAngle - current)
+
+    def normalize_angle(self, angle):
+        """Make any angle be between +/- pi."""
+        angle -= 2 * math.pi * int (angle / (2 * math.pi))
+        if angle <= -math.pi:
+            angle += 2 * math.pi
+        elif angle > math.pi:
+            angle -= 2 * math.pi
+        return angle
+
+    def two_pi_normalize(self, angle):
+        """Make any angle between 0 to 2pi."""
+        angle += 2 * math.pi
+        return angle % (2 * math.pi)
         
     ########################
     ### VISIBILITY GRAPH ###
