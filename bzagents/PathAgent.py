@@ -40,10 +40,10 @@ class PathAgent(object):
         # append goal flag position to points
         flags = self.bzrc.get_flags()
         for flag in flags:
-            if tank.flag and flag.color in tank.callsign:               # if the tank has the flag, go home
-                self.points.append((flag.x, flag.y))
+            if tank.flag != '-' and flag.color in tank.callsign:        # if the tank has the flag, go home
+                self.points.append((flag.x, flag.y))                    # TODO: this line only works if the other team hasn't already taken our flag and run with it. We should probably use our base instead...
                 break
-            elif not tank.flag and flag.color not in tank.callsign:     # if the tank has no flag, go for one
+            elif flag.color not in tank.callsign:                       # if the tank has no flag, go for one
                 self.points.append((flag.x, flag.y))
                 break
         print "added flag position" 
@@ -151,7 +151,7 @@ class PathAgent(object):
         if start not in self.points:
             print >>sys.stderr, 'attempted search when tank was not part of graph'
 
-        # initialize search at robot's current location
+        # initialize search at the tank's current location
         self.frontier.append(start)
 
     def depth_first_search(self):
@@ -173,11 +173,11 @@ class PathAgent(object):
             return True
 
         # find out which point we're dealing with
-        index = 0
-        while not vertex == self.points[index] and index < len(self.points):
-            index += 1
-        if index == len(self.points):
+        try:
+            index = self.points.index(vertex)
+        except:
             print >>sys.stderr, 'Vertex not found in points'
+            return False
 
         # prepare qualified new neighbors to be added to frontier
         row = self.visibility_graph[index]
