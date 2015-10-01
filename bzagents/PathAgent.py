@@ -12,8 +12,11 @@ class PathAgent(object):
     def __init__(self, bzrc, tank_index):
         self.bzrc = bzrc
         self.points = []
+        self.obstacles = self.bzrc.get_obstacles()
         self.edges = []
         self.tank_index = tank_index
+        self.O_FROB = 0.05
+        self.G_FROB = 0.50
 
         self.visibility_graph = None
         self.frontier = []
@@ -52,7 +55,50 @@ class PathAgent(object):
         self.move(x_force, y_force, tank)
         
     def calculate_obstacles_force(self, tank):
-        return [0, 0]
+        x_force = 0
+        y_force = 0
+        for obstacle in self.obstacles:
+            forces = self.get_obstacle_force(obstacle, tank)
+            x_force += forces[0]
+            y_force += forces[1]
+
+        return [x_force * self.O_FROB, y_force * self.O_FROB]
+        
+    def get_obstacle_force(self, obstacle, tank, use_exponential=False):
+        d = 0  # maximum radius of influence
+        r = 0   # radius of circle
+        average_x = 0
+        average_y = 0
+        total_points = 0
+
+        for point in obstacle:
+            average_x += point[0]
+            average_y += point[1]
+            total_points += 1
+        average_x /= total_points   # x coordinate of object center
+        average_y /= total_points   # y coordinate of object center
+
+
+        for point in obstacle:
+            temp = math.sqrt((average_x - point[0]) ** 2 + (average_y - point[1]) ** 2)
+            if temp > r:
+                r = temp
+                d = r + 20
+
+        d_x = average_x - tank.x
+        d_y = average_y - tank.y
+        tank_distance = math.sqrt((d_x) ** 2 + (d_y) ** 2)
+        angle = math.atan2(d_y, d_x)
+        if tank_distance > d:
+            return [0, 0]
+
+        # if we're within radius of influence
+        mag = d - tank_distance
+
+        if not use_exponential:
+            return [mag * math.cos(angle), mag * math.sin(angle)]
+
+        return [-1 * (mag * abs(mag)) * math.cos(angle)/50, -1 * (mag * abs(mag)) * math.sin(angle)/50]
         
     def calculate_goal_force(self, goal, tank):
         return [0, 0]
