@@ -15,30 +15,35 @@ class PathAgent(object):
         self.obstacles = self.bzrc.get_obstacles()
         self.tank_index = tank_index
         self.O_FROB = 0.05
-        self.G_FROB = 0.50
+        self.G_FROB = 0.90
 
         self.path = []
         self.has_path = False
 
     def tick(self, time_diff):
         self.commands = []
+        tank = self.bzrc.get_mytanks()[self.tank_index]
         if not self.has_path:
             # get the path by choosing from DFS, BFS, A*, etc.
+            print "initializing path"
             path_finder = PathFinder(self.bzrc, self.tank_index)
             self.path = path_finder.get_depth_first_search_path()
             print self.path
             self.has_path = True
 
-        while not len(self.path) == 0:
-            tank = self.bzrc.get_mytanks()[self.tank_index]
-            if (tank.x, tank.y) == self.path[0]:
+        if not len(self.path) == 0:
+            dist_from_next = math.sqrt((tank.x - self.path[0][0]) ** 2 + (tank.y - self.path[0][1]) **2)
+            print "Distance from next vertex: " + str(dist_from_next)
+            if dist_from_next < 10:
                 self.path.remove(self.path[0])
             next_point = self.path[0]
             self.traverse_path(next_point, tank)
+        else:
+            self.has_path = False
         return
 
     def traverse_path(self, next_point, tank):
-        print "tank is at (" + str(tank.x) + ", " + str(tank.y) + ") and moving toward " + str(next_point)
+        # print "tank is at (" + str(tank.x) + ", " + str(tank.y) + ") and moving toward " + str(next_point)
         forces = []
         x_force = 0
         y_force = 0
@@ -59,10 +64,12 @@ class PathAgent(object):
             forces = self.get_obstacle_force(obstacle, tank)
             x_force += forces[0]
             y_force += forces[1]
-
-        return [x_force * self.O_FROB, y_force * self.O_FROB]
         
-    def get_obstacle_force(self, obstacle, tank, use_exponential=False):
+        output = [x_force * self.O_FROB, y_force * self.O_FROB]
+        print "Obstacles force: " + str(output)
+        return output
+        
+    def get_obstacle_force(self, obstacle, tank):
         d = 0  # maximum radius of influence
         r = 0   # radius of circle
         average_x = 0
@@ -93,13 +100,15 @@ class PathAgent(object):
         # if we're within radius of influence
         mag = d - tank_distance
 
-        if not use_exponential:
-            return [mag * math.cos(angle), mag * math.sin(angle)]
-
         return [-1 * (mag * abs(mag)) * math.cos(angle)/50, -1 * (mag * abs(mag)) * math.sin(angle)/50]
         
     def calculate_goal_force(self, goal, tank):
-        return [0, 0]
+        x_force = min(goal[0] - tank.x, 200)
+        y_force = min(goal[1] - tank.y, 200)
+
+        output = [x_force * self.G_FROB, y_force * self.G_FROB]
+        print "Goal force: " + str(output)
+        return output
         
     def move(self, x_force, y_force, tank):
         magnitude = math.sqrt(x_force ** 2 + y_force ** 2)
@@ -119,7 +128,11 @@ class PathAgent(object):
     def calculate_angvel(self, tank, targetAngle):
         targetAngle = self.two_pi_normalize(targetAngle)
         current = self.two_pi_normalize(tank.angle)
-        return self.normalize_angle(targetAngle - current)
+        print "Target Angle is: " + str(targetAngle)
+        print "Tank Angle is: " + str(current)
+        output = self.normalize_angle(targetAngle - current)
+        print "\tReturning angvel of " + str(output) 
+        return output
 
     def normalize_angle(self, angle):
         """Make any angle be between +/- pi."""
@@ -154,7 +167,12 @@ def main():
     # Connect.
     # bzrc = BZRC(host, int(port), debug=True)
     bzrc = BZRC(host, int(port))
-    agent = PathAgent(bzrc, 0)
+    agents = []
+    index = 0
+    for tank in bzrc.get_mytanks():
+        agent = PathAgent(bzrc, index)
+        agents.append(agent)
+        index += 1
 
     prev_time = time.time()
 
@@ -163,7 +181,8 @@ def main():
         while True:
             time_diff = time.time() - prev_time
             prev_time = time.time()
-            agent.tick(time_diff)
+            for agent in agents:
+                agent.tick(time_diff)
     except KeyboardInterrupt:
         print "Exiting due to keyboard interrupt."
         bzrc.close()
