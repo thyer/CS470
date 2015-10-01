@@ -14,15 +14,22 @@ class PathAgent(object):
         self.bzrc = bzrc
         self.obstacles = self.bzrc.get_obstacles()
         self.tank_index = tank_index
-        self.O_FROB = 0.05
+        self.O_FROB = 0.20
         self.G_FROB = 0.90
 
         self.path = []
         self.has_path = False
+        self.has_flag = False
 
     def tick(self, time_diff):
         self.commands = []
         tank = self.bzrc.get_mytanks()[self.tank_index]
+        
+        # if the tank picks up the flag, recalculate path
+        if not self.has_flag and not tank.flag =='-':
+            self.has_path = False
+            self.has_flag = True
+            
         if not self.has_path:
             # get the path by choosing from DFS, BFS, A*, etc.
             print "initializing path"
@@ -33,17 +40,15 @@ class PathAgent(object):
 
         if not len(self.path) == 0:
             dist_from_next = math.sqrt((tank.x - self.path[0][0]) ** 2 + (tank.y - self.path[0][1]) **2)
-            print "Distance from next vertex: " + str(dist_from_next)
+            next_point = self.path[0]
             if dist_from_next < 10:
                 self.path.remove(self.path[0])
-            next_point = self.path[0]
             self.traverse_path(next_point, tank)
         else:
             self.has_path = False
         return
 
     def traverse_path(self, next_point, tank):
-        # print "tank is at (" + str(tank.x) + ", " + str(tank.y) + ") and moving toward " + str(next_point)
         forces = []
         x_force = 0
         y_force = 0
@@ -66,7 +71,6 @@ class PathAgent(object):
             y_force += forces[1]
         
         output = [x_force * self.O_FROB, y_force * self.O_FROB]
-        print "Obstacles force: " + str(output)
         return output
         
     def get_obstacle_force(self, obstacle, tank):
@@ -107,17 +111,20 @@ class PathAgent(object):
         y_force = min(goal[1] - tank.y, 200)
 
         output = [x_force * self.G_FROB, y_force * self.G_FROB]
-        print "Goal force: " + str(output)
         return output
         
     def move(self, x_force, y_force, tank):
-        magnitude = math.sqrt(x_force ** 2 + y_force ** 2)
+        magnitude = math.sqrt(x_force ** 2 + y_force ** 2)/20
         targetAngle = math.atan2(y_force, x_force)
 
         # randomly shoot
         should_shoot = False
-        if random.random() < .01:
+        if random.random() < .05:
             should_shoot = True
+            # randomly recalculate route
+            self.has_path = False
+            magnitude = 0
+            targetAngle = tank.angle
 
         command = Command(self.tank_index, magnitude, self.calculate_angvel(tank, targetAngle), should_shoot)
         self.commands.append(command)
@@ -128,10 +135,7 @@ class PathAgent(object):
     def calculate_angvel(self, tank, targetAngle):
         targetAngle = self.two_pi_normalize(targetAngle)
         current = self.two_pi_normalize(tank.angle)
-        print "Target Angle is: " + str(targetAngle)
-        print "Tank Angle is: " + str(current)
         output = self.normalize_angle(targetAngle - current)
-        print "\tReturning angvel of " + str(output) 
         return output
 
     def normalize_angle(self, angle):
