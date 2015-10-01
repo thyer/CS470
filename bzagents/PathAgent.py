@@ -23,8 +23,7 @@ class PathAgent(object):
     def tick(self, time_diff):
         # TODO: Make tick actually do something :)
         if not self.has_path:
-            self.create_visibility_graph()
-            self.depth_first_search
+            self.depth_first_search()
             print self.path
             self.has_path = True
         return
@@ -32,6 +31,7 @@ class PathAgent(object):
     def create_visibility_graph(self):
         print "creating visibility graph"
         tank = self.bzrc.get_mytanks()[self.tank_index]
+        self.points = []
 
         # append tank position to points
         self.points.append((tank.x, tank.y))
@@ -155,17 +155,21 @@ class PathAgent(object):
         self.frontier.append(start)
 
     def depth_first_search(self):
+        print "Entering DFS"
         self.begin_search()
+        print "Search initialized"
         if not self.r_dfs(self.frontier[0]):
             print >>sys.stderr, 'DFS failed to find goal'
 
     def r_dfs(self, vertex):
+        print "Entering R_DFS"
         self.frontier.remove(vertex)
         self.visited.append(vertex)
 
         # recursive base case, found the goal
         if vertex == self.points[1]:
             self.path.append(vertex)
+            print "R_DFS found the goal"
             return True
 
         # find out which point we're dealing with
@@ -194,6 +198,7 @@ class PathAgent(object):
             self.frontier.insert(0, neighbor)
             if self.r_dfs(neighbor):
                 self.path.insert(0, vertex)
+                print "R_DFS child returned true"
                 return True
                 
         # none of our children in this path returned true
