@@ -15,7 +15,10 @@ class PathAgent(object):
 
         self.visibility_graph = None
         self.create_visibility_graph()
-        self.print_visibility_graph()  # TODO: eventually we'll want to remove this
+        self.print_visibility_graph()   # TODO: eventually we'll want to remove this
+        self.frontier = []
+        self.visited = []
+        self.path = []
 
     def tick(self, time_diff):
         # TODO: Make tick actually do something :)
@@ -30,7 +33,10 @@ class PathAgent(object):
         # append goal flag position to points
         flags = self.bzrc.get_flags()
         for flag in flags:
-            if not flag.color in tank.callsign:
+            if tank.flag and flag.color in tank.callsign:               # if the tank has the flag, go home
+                self.points.append((flag.x, flag.y))
+                break
+            elif not tank.flag and flag.color not in tank.callsign:     # if the tank has no flag, go for one
                 self.points.append((flag.x, flag.y))
                 break
                 
@@ -120,6 +126,66 @@ class PathAgent(object):
     def print_visibility_graph(self):
         for row in self.visibility_graph:
             print row
+
+    def begin_search(self):
+        # clear everything
+        self.visited = []
+        self.frontier = []
+        self.path = []
+
+        # some basic sanity checks, make sure our start is in the visibility graph
+        self.create_visibility_graph()
+        tank = self.bzrc.get_mytanks()[self.tank_index]
+        start = (tank.x, tank.y)
+        if start not in self.points:
+            print >>sys.stderr, 'attempted search when tank was not part of graph'
+
+        # initialize search at robot's current location
+        self.frontier.append(start)
+
+    def depth_first_search(self):
+        self.begin_search()
+        if not self.r_dfs(self.frontier[0]):
+            print >>sys.stderr, 'DFS failed to find goal'
+
+    def r_dfs(self, vertex):
+        self.frontier.remove(vertex)
+        self.visited.append(vertex)
+
+        # recursive base case, found the goal
+        if vertex == self.points[1]:
+            self.path.append(vertex)
+            return True
+
+        # find out which point we're dealing with
+        index = 0
+        while not vertex == self.points[index] and index < len(self.points):
+            index += 1
+        if index == len(self.points):
+            print >>sys.stderr, 'Vertex not found in points'
+
+        # prepare qualified new neighbors to be added to frontier
+        row = self.visibility_graph[index]
+        new_neighbors = []
+        index = 0
+        for item in row:
+            neighbor = self.points[index]
+            if item == 1 and neighbor not in self.visited:
+                new_neighbors.append(neighbor)
+            index += 1
+
+        # recursive base case, no new neighbors
+        if len(new_neighbors) == 0:
+            return False
+
+        # it's a beautiful day in the neighborhood
+        for neighbor in new_neighbors:
+            self.frontier.insert(0, neighbor)
+            if self.r_dfs(neighbor):
+                self.path.insert(0, vertex)
+                return True
+        # none of our children in this path returned true
+        return False
 
 
 def main():
