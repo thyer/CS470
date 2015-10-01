@@ -14,21 +14,28 @@ class PathAgent(object):
         self.tank_index = tank_index
 
         self.visibility_graph = None
-        self.create_visibility_graph()
-        self.print_visibility_graph()   # TODO: eventually we'll want to remove this
         self.frontier = []
         self.visited = []
         self.path = []
+        self.has_path = False
+        print "running constructor"
 
     def tick(self, time_diff):
         # TODO: Make tick actually do something :)
+        if not self.has_path:
+            self.create_visibility_graph()
+            self.depth_first_search
+            print self.path
+            self.has_path = True
         return
 
     def create_visibility_graph(self):
+        print "creating visibility graph"
         tank = self.bzrc.get_mytanks()[self.tank_index]
 
         # append tank position to points
         self.points.append((tank.x, tank.y))
+        print "added self position"
         
         # append goal flag position to points
         flags = self.bzrc.get_flags()
@@ -39,7 +46,8 @@ class PathAgent(object):
             elif not tank.flag and flag.color not in tank.callsign:     # if the tank has no flag, go for one
                 self.points.append((flag.x, flag.y))
                 break
-                
+        print "added flag position" 
+        
         # append obstacle corners to points, and obstacle edges to our list of edges
         for obstacle in self.bzrc.get_obstacles():
             i = 0
@@ -51,9 +59,11 @@ class PathAgent(object):
         # initialize the visibility graph to all -1's
         length = len(self.points)
         self.visibility_graph = [[-1 for _ in range(length)] for _ in range(length)]
-
+        print "visibility graph initialized to all -1"
+        
         # figure out the visibility between each pair of points
         for col in range(length):
+            print "Filling in visibility graph column: " + str(col)
             for row in range(length):
                 if self.visibility_graph[row][col] == -1:  # we haven't considered this pair of points yet
                     if self.is_visible(self.points[col], self.points[row]):
@@ -64,6 +74,7 @@ class PathAgent(object):
                         # "if you are not visible to me, than I am not visible to you" mentality
                         self.visibility_graph[row][col] = 0
                         self.visibility_graph[col][row] = 0
+        print "done doing visibility graph"
 
     def is_visible(self, point1, point2):
         # check if they are the same point...a point is not visible to itself
@@ -184,12 +195,14 @@ class PathAgent(object):
             if self.r_dfs(neighbor):
                 self.path.insert(0, vertex)
                 return True
+                
         # none of our children in this path returned true
         return False
 
 
 def main():
     # Process CLI arguments.
+    print "entering main function"
     try:
         execname, host, port = sys.argv
     except ValueError:
@@ -201,9 +214,9 @@ def main():
     # Connect.
     # bzrc = BZRC(host, int(port), debug=True)
     bzrc = BZRC(host, int(port))
-
+    print "preparing agent"
     agent = PathAgent(bzrc, 0)
-
+    print "running agent"
     prev_time = time.time()
 
     # Run the agent
