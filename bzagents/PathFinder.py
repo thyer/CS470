@@ -13,8 +13,9 @@ class PathFinder(object):
         self.visited = []
         self.path = []
 
+        self.search_snapshots = []
+
         self.create_visibility_graph(tank_index)
-        self.print_visibility_graph()
 
     ########################
     ### VISIBILITY GRAPH ###
@@ -141,6 +142,7 @@ class PathFinder(object):
         return self.path
 
     def r_dfs(self, vertex):
+        self.search_snapshots.append(Snapshot(list(self.visited), list(self.frontier), False))
         self.frontier.remove(vertex)
         self.visited.append(vertex)
 
@@ -194,8 +196,15 @@ class PathFinder(object):
         self.frontier.append(BFSNode(self.points[0], None))
 
         while self.frontier:
+            if self.frontier[0].my_point in self.visited:
+                # we've already visited this node, don't need to look at it again
+                self.frontier.pop(0)
+                continue
+
+            self.search_snapshots.append(Snapshot(list(self.visited), list(self.frontier), True))
             current_node = self.frontier.pop(0)
             vertex = current_node.my_point
+            self.visited.append(vertex)
 
             # find out which (x,y) point we're dealing with
             try:
@@ -211,7 +220,10 @@ class PathFinder(object):
                 if row[i] == 1 and neighbor not in self.visited:
                     if self.is_goal(neighbor):
                         # If this child is the goal node, we're done!
-                        self.reconstruct_path_from_last_node(BFSNode(neighbor, current_node))
+                        last_node = BFSNode(neighbor, current_node)
+                        self.frontier.append(last_node)
+                        self.search_snapshots.append(Snapshot(list(self.visited), list(self.frontier), True))
+                        self.reconstruct_path_from_last_node(last_node)
                         return
                     else:
                         # Add this child to the end of the queue
@@ -235,6 +247,7 @@ class PathFinder(object):
         self.visited = []
         self.frontier = []
         self.path = []
+        self.search_snapshots = []
 
     def is_goal(self, point):
         return point == self.points[1]  # the goal point is always the second one in our list of points
@@ -244,3 +257,14 @@ class BFSNode(object):
     def __init__(self, my_point, parent_point):
         self.my_point = my_point
         self.parent = parent_point
+
+class Snapshot(object):
+    def __init__(self, visited, frontier, uses_nodes):
+        self.visited = visited
+
+        if uses_nodes:
+            self.frontier = []
+            for node in frontier:
+                self.frontier.append(node.my_point)
+        else:
+            self.frontier = frontier
