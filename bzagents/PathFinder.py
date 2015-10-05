@@ -1,6 +1,8 @@
 
 from bzrc import BZRC
 import sys
+import math
+from PriorityQueue import PriorityQueue
 
 class PathFinder(object):
     def __init__(self, bzrc, tank_index):
@@ -239,6 +241,51 @@ class PathFinder(object):
             self.path.insert(0, node.my_point)
             node = node.parent
 
+    ############################
+    ###   A-STAR ALGORITHM   ###
+    ############################
+
+    def a_star_search(self):
+        self.clear_history()
+        self.frontier = PriorityQueue()
+        self.frontier.put(AStarNode(self.points[0], None, 0), 0)
+
+        # iterate until either the frontier is empty
+        while not self.frontier.empty():
+            current = self.frontier.get()
+            if current.my_point in self.visited:
+                continue
+            self.visited.append[current]
+
+            # end immediately if the goal is found
+            if self.is_goal(current.my_point):
+                break
+
+            # find out which point we're dealing with
+            try:
+                index = self.points.index(current.my_point)
+            except:
+                print >> sys.stderr, 'Vertex not found in points'
+                return False
+
+            # prepare qualified new neighbors to be added to frontier
+            row = self.visibility_graph[index]
+            index = 0
+            for item in row:
+                neighbor = self.points[index]
+                if item == 1 and neighbor not in self.visited:
+                    distance = self.distance(neighbor.my_point, current.my_point)   # distance so far
+                    distance += self.distance(neighbor.my_point, self.points[1])    # est. distance to go
+                    self.frontier.put(AStarNode(neighbor, current, distance), distance)
+                index += 1
+
+        # unwind path back to start
+        last_node = self.visited[len(self.visited) - 1]
+        while not last_node == None:
+            self.path.insert(0, last_node.my_point)
+            last_node = last_node.parent
+
+
     ################################
     ### SEARCH ALGORITHM HELPERS ###
     ################################
@@ -252,11 +299,21 @@ class PathFinder(object):
     def is_goal(self, point):
         return point == self.points[1]  # the goal point is always the second one in our list of points
 
+    def distance(self, point1, point2):
+        return math.sqrt((point1[0]-point2[0])**2 + (point1[1] - point2[1]) ** 2)
+
 
 class BFSNode(object):
     def __init__(self, my_point, parent_point):
         self.my_point = my_point
         self.parent = parent_point
+
+
+class AStarNode(object):
+    def __init__(self, my_point, parent_point, cost):
+        self.my_point = my_point
+        self.parent = parent_point
+        self.cost = cost
 
 class Snapshot(object):
     def __init__(self, visited, frontier, uses_nodes):
