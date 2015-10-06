@@ -34,7 +34,7 @@ class PathAgent(object):
             # get the path by choosing from DFS, BFS, A*, etc.
             print "initializing path"
             path_finder = PathFinder(self.bzrc, self.tank_index)
-            self.path = path_finder.get_depth_first_search_path()
+            self.path = path_finder.get_a_star_path()
             print self.path
             self.has_path = True
 

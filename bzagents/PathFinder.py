@@ -244,6 +244,9 @@ class PathFinder(object):
     ############################
     ###   A-STAR ALGORITHM   ###
     ############################
+    def get_a_star_path(self):
+        self.a_star_search()
+        return self.path
 
     def a_star_search(self):
         self.clear_history()
