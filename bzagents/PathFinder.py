@@ -256,9 +256,9 @@ class PathFinder(object):
         # iterate until either the frontier is empty
         while not self.frontier.empty():
             current = self.frontier.get()
-            if current.my_point in self.visited:
+            if current in self.visited:
                 continue
-            self.visited.append[current]
+            self.visited.append(current)
 
             # end immediately if the goal is found
             if self.is_goal(current.my_point):
@@ -277,8 +277,8 @@ class PathFinder(object):
             for item in row:
                 neighbor = self.points[index]
                 if item == 1 and neighbor not in self.visited:
-                    distance = self.distance(neighbor.my_point, current.my_point)   # distance so far
-                    distance += self.distance(neighbor.my_point, self.points[1])    # est. distance to go
+                    distance = self.distance(neighbor, current.my_point)   # distance so far
+                    distance += self.distance(neighbor, self.points[1])    # est. distance to go
                     self.frontier.put(AStarNode(neighbor, current, distance), distance)
                 index += 1
 
