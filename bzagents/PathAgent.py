@@ -14,7 +14,7 @@ class PathAgent(object):
         self.bzrc = bzrc
         self.obstacles = self.bzrc.get_obstacles()
         self.tank_index = tank_index
-        self.O_FROB = 0.20
+        self.O_FROB = 0.50
         self.G_FROB = 0.90
 
         self.path = []
@@ -34,14 +34,15 @@ class PathAgent(object):
             # get the path by choosing from DFS, BFS, A*, etc.
             print "initializing path"
             path_finder = PathFinder(self.bzrc, self.tank_index)
-            self.path = path_finder.get_a_star_path()
+            print "calculating path"
+            self.path = path_finder.get_path()
             print self.path
             self.has_path = True
 
         if not len(self.path) == 0:
             dist_from_next = math.sqrt((tank.x - self.path[0][0]) ** 2 + (tank.y - self.path[0][1]) **2)
             next_point = self.path[0]
-            if dist_from_next < 10:
+            if dist_from_next < 15:
                 self.path.remove(self.path[0])
             self.traverse_path(next_point, tank)
         else:

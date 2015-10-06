@@ -13,3 +13,6 @@ class PriorityQueue:
 
     def get(self):
         return heapq.heappop(self.elements)[1]
+       
+    def size(self):
+        return len(self.elements)

@@ -19,6 +19,9 @@ class PathFinder(object):
 
         self.create_visibility_graph(tank_index)
 
+    def get_path(self):
+        return self.get_depth_first_search_path()
+        
     ########################
     ### VISIBILITY GRAPH ###
     ########################
@@ -252,16 +255,20 @@ class PathFinder(object):
         self.clear_history()
         self.frontier = PriorityQueue()
         self.frontier.put(AStarNode(self.points[0], None, 0), 0)
+        last_node = None
 
         # iterate until either the frontier is empty
         while not self.frontier.empty():
+            print "Frontier size is: " + str(self.frontier.size())
             current = self.frontier.get()
-            if current in self.visited:
+            if current.my_point in self.visited:
                 continue
-            self.visited.append(current)
+            self.visited.append(current.my_point)
 
             # end immediately if the goal is found
             if self.is_goal(current.my_point):
+                last_node = current
+                print "Found the goal!"
                 break
 
             # find out which point we're dealing with
@@ -283,7 +290,6 @@ class PathFinder(object):
                 index += 1
 
         # unwind path back to start
-        last_node = self.visited[len(self.visited) - 1]
         while not last_node == None:
             self.path.insert(0, last_node.my_point)
             last_node = last_node.parent
