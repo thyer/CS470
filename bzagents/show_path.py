@@ -19,7 +19,7 @@ def show_path(plot, path):
     prev_point = None
     for point in path:
         if prev_point:
-            plot.plot([point[0], prev_point[0]], [point[1], prev_point[1]], 'r')
+            plot.plot([point[0], prev_point[0]], [point[1], prev_point[1]], 'r', linewidth=5)
         if point == path[len(path) - 1]:
             plot.plot(point[0], point[1], 'g*', markersize=12)  # goal point is green starr
         else:
