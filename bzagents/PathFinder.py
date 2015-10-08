@@ -27,6 +27,8 @@ class PathFinder(object):
     ########################
 
     def create_visibility_graph(self, tank_index):
+        print "Generating Visibility Graph"
+
         tank = self.bzrc.get_mytanks()[tank_index]
         self.points = []
 
@@ -180,6 +182,7 @@ class PathFinder(object):
     ##########################
 
     def get_depth_first_search_path(self):
+        print "Running Depth First Search to Get Path"
         # clear everything and add the tank's start position to the frontier
         self.clear_history()
         self.frontier.append(self.points[0])
@@ -190,7 +193,7 @@ class PathFinder(object):
         return self.path
 
     def r_dfs(self, vertex):
-        self.search_snapshots.append(Snapshot(list(self.visited), list(self.frontier), False))
+        self.search_snapshots.append(Snapshot(list(self.visited), list(self.frontier)))
         self.frontier.remove(vertex)
         self.visited.append(vertex)
 
@@ -235,21 +238,22 @@ class PathFinder(object):
     ############################
 
     def get_breadth_first_search_path(self):
+        print "Running Breadth First Search to Get Path"
+         # clear everything and add the beginning node (with the tank's start position) to the frontier
+        self.clear_history()
+        self.frontier.append(BFSNode(self.points[0], None))
+
         self.breadth_first_search()
         return self.path
 
     def breadth_first_search(self):
-        # clear everything and add the beginning node (with the tank's start position) to the frontier
-        self.clear_history()
-        self.frontier.append(BFSNode(self.points[0], None))
-
         while self.frontier:
             if self.frontier[0].my_point in self.visited:
                 # we've already visited this node, don't need to look at it again
                 self.frontier.pop(0)
                 continue
 
-            self.search_snapshots.append(Snapshot(list(self.visited), list(self.frontier), True))
+            self.search_snapshots.append(Snapshot(list(self.visited), list(self.frontier), uses_bfs_nodes=True))
             current_node = self.frontier.pop(0)
             vertex = current_node.my_point
             self.visited.append(vertex)
@@ -270,7 +274,7 @@ class PathFinder(object):
                         # If this child is the goal node, we're done!
                         last_node = BFSNode(neighbor, current_node)
                         self.frontier.append(last_node)
-                        self.search_snapshots.append(Snapshot(list(self.visited), list(self.frontier), True))
+                        self.search_snapshots.append(Snapshot(list(self.visited), list(self.frontier), uses_bfs_nodes=True))
                         self.reconstruct_path_from_last_node(last_node)
                         return
                     else:
@@ -291,6 +295,7 @@ class PathFinder(object):
     ###   A-STAR ALGORITHM   ###
     ############################
     def get_a_star_path(self):
+        print "Running A* to Get Path"
         self.a_star_search()
         return self.path
 
@@ -300,9 +305,9 @@ class PathFinder(object):
         self.frontier.put(AStarNode(self.points[0], None, 0), 0)
         last_node = None
 
-        # iterate until either the frontier is empty
+        # iterate until the frontier is empty
         while not self.frontier.empty():
-            print "Frontier size is: " + str(self.frontier.size())
+            self.search_snapshots.append(Snapshot(list(self.visited), self.frontier.getNodes(), uses_a_star_nodes=True))
             current = self.frontier.get()
             if current.my_point in self.visited:
                 continue
@@ -311,7 +316,6 @@ class PathFinder(object):
             # end immediately if the goal is found
             if self.is_goal(current.my_point):
                 last_node = current
-                print "Found the goal!"
                 break
 
             # find out which point we're dealing with
@@ -368,10 +372,16 @@ class AStarNode(object):
         self.cost = cost
 
 class Snapshot(object):
-    def __init__(self, visited, frontier, uses_nodes):
+    def __init__(self, visited, frontier, uses_bfs_nodes=False, uses_a_star_nodes=False):
         self.visited = visited
 
-        if uses_nodes:
+        # our frontier is made up of nodes or points. We only need the snapshot to contain
+        # points, so pull the points out of the nodes if needed.
+        if uses_bfs_nodes:
+            self.frontier = []
+            for node in frontier:
+                self.frontier.append(node.my_point)
+        elif uses_a_star_nodes:
             self.frontier = []
             for node in frontier:
                 self.frontier.append(node.my_point)

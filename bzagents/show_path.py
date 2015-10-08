@@ -75,6 +75,9 @@ def remove_old_plot_files():
     for f in filelist:
         os.remove("../plots/dfs_plots/" + f)
 
+    filelist = [ f for f in os.listdir("../plots/a_star_plots/") if f.endswith(".png") ]
+    for f in filelist:
+        os.remove("../plots/a_star_plots/" + f)
 
 def main():
     # Process CLI arguments.
@@ -106,6 +109,13 @@ def main():
 
     snapshots = path_finder.search_snapshots
     plot_snapshots(snapshots, "../plots/bfs_plots/bfs", bzrc.get_obstacles())
+
+    ### A* Visualizations ###
+    path = path_finder.get_a_star_path()
+    plot_single(path, bzrc.get_obstacles(), '../plots/a_star_plots/a_star.png')
+
+    snapshots = path_finder.search_snapshots
+    plot_snapshots(snapshots, "../plots/a_star_plots/a_star", bzrc.get_obstacles())
 
 
     print("finished")

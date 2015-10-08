@@ -16,3 +16,9 @@ class PriorityQueue:
        
     def size(self):
         return len(self.elements)
+
+    def getNodes(self):
+        nodes = []
+        for elem in self.elements:
+            nodes.append(elem[1])
+        return nodes
