@@ -16,18 +16,17 @@ class PathFinder(object):
         self.path = []
 
         self.search_snapshots = []
-
         self.create_visibility_graph(tank_index)
 
     def get_path(self):
-        return self.get_depth_first_search_path()
-        
+        return self.get_a_star_path()
+
     ########################
     ### VISIBILITY GRAPH ###
     ########################
 
     def create_visibility_graph(self, tank_index):
-        print "Generating Visibility Graph"
+        print "Generating Visibility Graph for Tank", tank_index
 
         tank = self.bzrc.get_mytanks()[tank_index]
         self.points = []
@@ -74,6 +73,39 @@ class PathFinder(object):
         # remove any edges that are on the very edge of the map (and therefore couldn't be traversed by the tank)
         self.remove_visibility_on_world_edges()
 
+
+    def update_visibility_graph(self, tank_index):
+        tank = self.bzrc.get_mytanks()[tank_index]
+        self.points[0] = (tank.x, tank.y)  # update the tank position
+
+        # update goal flag position in points
+        flags = self.bzrc.get_flags()
+        for flag in flags:
+            if tank.flag != '-' and flag.color in tank.callsign:        # if the tank has the flag, go home
+                self.points[1] = (flag.x, flag.y)                    # TODO: this line only works if the other team hasn't already taken our flag and run with it. We should probably use our base instead...
+                break
+            elif tank.flag == '-' and flag.color not in tank.callsign:                       # if the tank has no flag, go for one
+                self.points[1] = (flag.x, flag.y)
+                break
+
+        # update the first two rows and columns in our visibility graph (these are the only points that have changed)
+        # initialize the visibility graph to all -1's
+        length = len(self.points)
+
+        # figure out the visibility between each pair of points
+        for col in range(length):
+            for row in range(length):
+                if col > 1 and row > 1:
+                    continue
+
+                if self.is_visible(self.points[col], self.points[row]):
+                    # "if you are visible to me, than I am visible to you" mentality
+                    self.visibility_graph[row][col] = 1
+                    self.visibility_graph[col][row] = 1
+                else:
+                    # "if you are not visible to me, than I am not visible to you" mentality
+                    self.visibility_graph[row][col] = 0
+                    self.visibility_graph[col][row] = 0
 
     def is_visible(self, point1, point2):
         # check if they are the same point...a point is not visible to itself
@@ -307,9 +339,12 @@ class PathFinder(object):
 
         # iterate until the frontier is empty
         while not self.frontier.empty():
-            self.search_snapshots.append(Snapshot(list(self.visited), self.frontier.getNodes(), uses_a_star_nodes=True))
+            snapshot = Snapshot(list(self.visited), self.frontier.getNodes(), uses_a_star_nodes=True)
+            self.search_snapshots.append(snapshot)
             current = self.frontier.get()
             if current.my_point in self.visited:
+                #  Never mind, we didn't want that snapshot :)
+                self.search_snapshots.remove(snapshot)
                 continue
             self.visited.append(current.my_point)
 
@@ -331,9 +366,10 @@ class PathFinder(object):
             for item in row:
                 neighbor = self.points[index]
                 if item == 1 and neighbor not in self.visited:
-                    distance = self.distance(neighbor, current.my_point)   # distance so far
-                    distance += self.distance(neighbor, self.points[1])    # est. distance to go
-                    self.frontier.put(AStarNode(neighbor, current, distance), distance)
+                    distance = current.cost
+                    distance += self.distance(neighbor, current.my_point)   # distance so far
+                    est_distance_remaining = distance + self.distance(neighbor, self.points[1])    # est. distance to go
+                    self.frontier.put(AStarNode(neighbor, current, distance), est_distance_remaining)
                 index += 1
 
         # unwind path back to start
