@@ -70,21 +70,8 @@ class PathFinder(object):
                         self.visibility_graph[col][row] = 0
 
         # remove any edges that are on the very edge of the map (and therefore couldn't be traversed by the tank)
-        for index1 in range(length):
-            point1 = self.points[index1]
-            if abs(point1[0]) == 400:  # the x value is on the edge of the map
-                for index2 in range(length):
-                    point2 = self.points[index2]
-                    if self.visibility_graph[index1][index2] == 1 and abs(point2[0] == 400):  # both of these points' x values are on the edge of the map
-                        self.visibility_graph[index1][index2] = 0  # make them invisible to each other
-                        self.visibility_graph[index2][index1] = 0
+        self.remove_visibility_on_world_edges()
 
-            if abs(point1[1] == 400):  # the y value is on the edge of the map
-                for index2 in range(length):
-                    point2 = self.points[index2]
-                    if self.visibility_graph[index1][index2] == 1 and abs(point2[1] == 400):  # both of these points' y values are on the edge of the map
-                        self.visibility_graph[index1][index2] = 0  # make them invisible to each other
-                        self.visibility_graph[index2][index1] = 0
 
     def is_visible(self, point1, point2):
         # check if they are the same point...a point is not visible to itself
@@ -143,6 +130,45 @@ class PathFinder(object):
         y = 1
 
         return (seg_end[x]-seg_start[x]) * (point[y]-seg_end[y]) - (seg_end[y]-seg_start[y]) * (point[x]-seg_end[x])
+
+    def remove_visibility_on_world_edges(self):
+        length = len(self.points)
+
+        for index1 in range(length):
+            point1 = self.points[index1]
+
+            # check left edge
+            if point1[0] == -400:  # the x value is on the left edge of the map
+                for index2 in range(length):
+                    point2 = self.points[index2]
+                    if self.visibility_graph[index1][index2] == 1 and point2[0] == -400:  # both of these points' x values are on the left edge of the map
+                        self.visibility_graph[index1][index2] = 0  # make them invisible to each other
+                        self.visibility_graph[index2][index1] = 0
+
+            # check right edge
+            elif point1[0] == 400:  # the x value is on the right edge of the map
+                for index2 in range(length):
+                    point2 = self.points[index2]
+                    if self.visibility_graph[index1][index2] == 1 and point2[0] == 400:  # both of these points' x values are on the edge of the map
+                        self.visibility_graph[index1][index2] = 0  # make them invisible to each other
+                        self.visibility_graph[index2][index1] = 0
+
+            # check top edge
+            elif point1[1] == 400:  # the y value is on the top edge of the map
+                for index2 in range(length):
+                    point2 = self.points[index2]
+                    if self.visibility_graph[index1][index2] == 1 and point2[1] == 400:  # both of these points' y values are on the top edge of the map
+                        self.visibility_graph[index1][index2] = 0  # make them invisible to each other
+                        self.visibility_graph[index2][index1] = 0
+
+            # check bottom edge
+            elif point1[1] == -400:  # the y value is on the bottom edge of the map
+                for index2 in range(length):
+                    point2 = self.points[index2]
+                    if self.visibility_graph[index1][index2] == 1 and point2[1] == -400:  # both of these points' y values are on the bottom edge of the map
+                        self.visibility_graph[index1][index2] = 0  # make them invisible to each other
+                        self.visibility_graph[index2][index1] = 0
+
 
     def print_visibility_graph(self):
         print "Visibility Graph:"
