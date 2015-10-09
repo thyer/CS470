@@ -17,8 +17,10 @@ def show_obstacle(plot, points):
 
 def show_path(plot, path):
     prev_point = None
+    distance = 0
     for point in path:
         if prev_point:
+            distance += calc_distance(prev_point, point)
             plot.plot([point[0], prev_point[0]], [point[1], prev_point[1]], 'r', linewidth=5)
         if point == path[len(path) - 1]:
             plot.plot(point[0], point[1], 'g*', markersize=12)  # goal point is green starr
@@ -26,6 +28,11 @@ def show_path(plot, path):
             plot.plot(point[0], point[1], 'ro', markersize=6)
         prev_point = point
 
+    string = "Path Length: %.2f" % distance
+    plot.annotate(string, xy=(-375, -375))
+
+def calc_distance(point1, point2):
+    return math.sqrt((point1[0]-point2[0])**2 + (point1[1] - point2[1]) ** 2)
 
 def plot_single(path, obstacles, filename):
     """Plot the path and some obstacles, and write the resulting
