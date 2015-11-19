@@ -46,3 +46,6 @@ class OccupancyGrid(object):
             
     def get_dimensions(self):
         return len(self.grid)
+
+    def get_grid(self):
+        return self.grid

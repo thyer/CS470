@@ -7,6 +7,7 @@ import math
 
 from bzrc import BZRC, Command
 from OccupancyGrid import OccupancyGrid
+from GFViz import GFViz
 
 
 class GridFilterAgent(object):
@@ -105,8 +106,9 @@ def main():
     bzrc = BZRC(host, int(port))
     agents = []
     index = 0
-    world_size = 800 # need to get this from bzrc
+    world_size = int(bzrc.get_constants()['worldsize'])
     occupancy_grid = OccupancyGrid(world_size)
+    viz = GFViz(occupancy_grid, world_size)
     agent = GridFilterAgent(bzrc, occupancy_grid, index)
     agents.append(agent)
 
@@ -114,11 +116,16 @@ def main():
 
     # Run the agent
     try:
-        while True:
+        while True: # TODO: While our occupancy grid isn't "good enough"
             time_diff = time.time() - prev_time
             prev_time = time.time()
             for agent in agents:
                 agent.tick(time_diff)
+            viz.update_grid(occupancy_grid.get_grid())
+
+        # Our occupancy grid is "good enough", enter an eternal loop so the visualization will be visible
+        viz.loop_eternally()
+
     except KeyboardInterrupt:
         print "Exiting due to keyboard interrupt."
         bzrc.close()

@@ -26,7 +26,6 @@ def update_grid(new_grid):
 def init_window(width, height):
     global window
     global grid
-    windowExists = True
     grid = numpy.zeros((width, height))
     glutInit(())
     glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE | GLUT_ALPHA | GLUT_DEPTH)
