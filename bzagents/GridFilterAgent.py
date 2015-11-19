@@ -107,7 +107,7 @@ def main():
     agents = []
     index = 0
     world_size = int(bzrc.get_constants()['worldsize'])
-    occupancy_grid = OccupancyGrid(world_size)
+    occupancy_grid = OccupancyGrid(world_size, .97, .1, 100)
     viz = GFViz(occupancy_grid, world_size)
     agent = GridFilterAgent(bzrc, occupancy_grid, index)
     agents.append(agent)
