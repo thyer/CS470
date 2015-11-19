@@ -54,3 +54,16 @@ class OccupancyGrid(object):
 
     def get_grid(self):
         return self.grid
+
+    def init_target_points(self, sensor_range):
+        half_range = sensor_range / 2
+        row = half_range
+
+        while row < self.get_dimensions():
+            col = half_range
+            while col < self.get_dimensions():
+                self.target_points.append((row, col))
+                col += sensor_range
+            row += sensor_range
+
+        print("Target Points", self.target_points)
