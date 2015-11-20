@@ -2,7 +2,6 @@
 
 import sys
 import random
-import time
 import math
 
 from bzrc import BZRC, Command
@@ -16,15 +15,14 @@ class GridFilterAgent(object):
         self.occupancy_grid = occupancy_grid
         self.tank_index = tank_index
 
-    def tick(self, time_diff):
+    def tick(self):
         self.commands = []
         tank = self.bzrc.get_mytanks()[self.tank_index]
-        size = self.occupancy_grid.get_dimensions() - 1
         if random.randint(0,10) > 3:
             # TODO: converting to grid coordinates is off by one because the grid is zero-based. Try to put 400 instead of 300 and eventually you'll get an index out of bounds error in the occupancy grid
-            self.occupancy_grid.observe(random.randint(-300, 0),random.randint(-300,0), True)
+            self.occupancy_grid.observe(random.randint(-300, 0), random.randint(-300, 0), True)
         else:
-            self.occupancy_grid.observe(random.randint(0, 300),random.randint(0, 300), False)
+            self.occupancy_grid.observe(random.randint(0, 300), random.randint(0, 300), False)
         return
 
     def traverse_path(self, next_point, tank):
@@ -105,23 +103,22 @@ def main():
     # Connect.
     # bzrc = BZRC(host, int(port), debug=True)
     bzrc = BZRC(host, int(port))
-    agents = []
-    index = 0
+
+    # Set up the occupancy grid and visualization
     world_size = int(bzrc.get_constants()['worldsize'])
     occupancy_grid = OccupancyGrid(world_size, .97, .1, 100)
     viz = GFViz(occupancy_grid, world_size)
-    agent = GridFilterAgent(bzrc, occupancy_grid, index)
-    agents.append(agent)
 
-    prev_time = time.time()
+    # Create our army
+    agents = []
+    agent = GridFilterAgent(bzrc, occupancy_grid, 0)
+    agents.append(agent)
 
     # Run the agent
     try:
-        while True: # TODO: While our occupancy grid isn't "good enough"
-            time_diff = time.time() - prev_time
-            prev_time = time.time()
+        while True:  # TODO: While our occupancy grid isn't "good enough"
             for agent in agents:
-                agent.tick(time_diff)
+                agent.tick()
             viz.update_grid(occupancy_grid.get_grid())
 
         # Our occupancy grid is "good enough", enter an eternal loop so the visualization will be visible
@@ -130,7 +127,6 @@ def main():
     except KeyboardInterrupt:
         print "Exiting due to keyboard interrupt."
         bzrc.close()
-
 
 if __name__ == '__main__':
     main()
