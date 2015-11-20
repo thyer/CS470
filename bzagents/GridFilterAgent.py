@@ -15,18 +15,16 @@ class GridFilterAgent(object):
         self.bzrc = bzrc
         self.occupancy_grid = occupancy_grid
         self.tank_index = tank_index
-        tank = bzrc.get_mytanks()[tank_index]
-        print "My coordinates are: " + str(tank.x) + ", " + str(tank.y)
-        print self.occupancy_grid.get_target_point(tank.x, tank.y)
 
     def tick(self, time_diff):
         self.commands = []
         tank = self.bzrc.get_mytanks()[self.tank_index]
         size = self.occupancy_grid.get_dimensions() - 1
         if random.randint(0,10) > 3:
+            # TODO: converting to grid coordinates is off by one because the grid is zero-based. Try to put 400 instead of 300 and eventually you'll get an index out of bounds error in the occupancy grid
             self.occupancy_grid.observe(random.randint(-300, 0),random.randint(-300,0), True)
         else:
-            self.occupancy_grid.observe(random.randint(0, 300),random.randint(0,300), False)
+            self.occupancy_grid.observe(random.randint(0, 300),random.randint(0, 300), False)
         return
 
     def traverse_path(self, next_point, tank):

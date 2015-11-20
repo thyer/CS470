@@ -21,7 +21,7 @@ class OccupancyGrid(object):
             for y in range(self.sensor_range):
                 point_x = i - self.sensor_range/2 + x
                 point_y = j - self.sensor_range/2 + y
-                if point_x >= len(self.grid) or point_x < 0 or point_y >= len(self.grid) or point_y < 0:
+                if self.is_outside_grid_bounds(point_x, point_y):
                     continue
                 elif self.get_gc(point_x, point_y) > .0001 and self.get_gc(point_x, point_y) < .9999:
                     unknown_points += 1
@@ -30,42 +30,43 @@ class OccupancyGrid(object):
                     total_points += 1
                     
         return unknown_points / total_points
-    
+
+    def is_outside_grid_bounds(self, x, y):
+        r, c = self.convert_to_grid(x, y)
+        return r >= len(self.grid) or r < 0 or c >= len(self.grid) or c < 0
+
     def get_gc(self, x, y):
         r, c = self.convert_to_grid(x, y)
-        print "World " + str(x) + ", " + str(y) + " converts to: " + str(r) + ", " + str(c)
         return self.grid[r][c]
         
     def set_gc(self, x, y, value):
         r, c = self.convert_to_grid(x, y)
         self.grid[r][c] = value
-        print "We just set grid coordinates " + str(r) + ", " + str(c) + " to be " + str(value)
-    
+
     def convert_to_world(self, r, c):
-        return (c-400, -1 * r + 400)
+        half_dim = len(self.grid) / 2
+        return (c-half_dim, -1 * r + half_dim)
         
     def convert_to_grid(self, x, y):
-        return (abs(y - 400), abs(x+400))
+        half_dim = len(self.grid) / 2
+        return (abs(y - half_dim), abs(x + half_dim))
     
-    def observe(self, i, j, ping):
-        print("At [" + str(i) + ", " + str(j) + "]: " + str(self.get_gc(i, j)))
+    def observe(self, x, y, ping):
         # apply Bayes rule to update the probability value given prior observations
         if ping:
-            bel_occ = self.true_hit * self.get_gc(i, j)
-            bel_unocc = self.false_alarm * (1-self.get_gc(i, j))
-            # print("BEL(OCC): " + str(bel_occ) + ", BEL(UNOCC): " + str(bel_unocc))
-            print "setting " + str(i) + ", " + str(j) + " to " + str(bel_occ/(bel_occ + bel_unocc))
-            self.set_gc(i, j, bel_occ/(bel_occ + bel_unocc))
+            bel_occ = self.true_hit * self.get_gc(x, y)
+            bel_unocc = self.false_alarm * (1-self.get_gc(x, y))
+            self.set_gc(x, y, bel_occ/(bel_occ + bel_unocc))
         else:
-            bel_occ = (1-self.true_hit) * self.get_gc(i, j)
-            bel_unocc = (1-self.false_alarm) * (1 - self.get_gc(i, j))
-            self.set_gc(i, j, bel_occ/(bel_occ + bel_unocc))
+            bel_occ = (1-self.true_hit) * self.get_gc(x, y)
+            bel_unocc = (1-self.false_alarm) * (1 - self.get_gc(x, y))
+            self.set_gc(x, y, bel_occ/(bel_occ + bel_unocc))
             
-    def get_estimate(self, i, j):
-        if self.get_gc(i, j) > .5:
-            return true
+    def get_estimate(self, x, y):
+        if self.get_gc(x, y) > .5:
+            return True
         else:
-            return false
+            return False
             
     def get_dimensions(self):
         return len(self.grid)
@@ -84,8 +85,6 @@ class OccupancyGrid(object):
                 col += sensor_range
             row += sensor_range
 
-        print("Target Points", self.target_points)
-        
     def get_target_point(self, tank_x, tank_y):
         if len(self.target_points) == 0:
             self.target_points = self.temp_target_points
@@ -94,22 +93,16 @@ class OccupancyGrid(object):
             return None
         
         min_point = None
-        min_dist = 100000
+        min_dist = float('inf')
         tank_x, tank_y = self.convert_to_grid(tank_x, tank_y)
-        print "tank x: " + str(tank_x)
-        print "tank y: " + str(tank_y)
         for point in self.target_points:
             dist = self.get_distance(point, (tank_x, tank_y))
-            print "distance from " + str(tank_x) + ", " + str(tank_y) + " to " + str(point) + " was " + str(dist)
-            if  dist < min_dist:
+            if dist < min_dist:
                 min_point = point
                 min_dist = dist
-        
-        print "Best point was " + str(min_point)
-        print "Distance was " + str(min_dist)
+
         min_point = self.convert_to_world(min_point[0], min_point[1])
         return min_point
     
     def get_distance(self, point1, point2):
         return math.sqrt((point1[0] - point2[0]) ** 2 + (point1[1] - point2[1]) ** 2)
-            
