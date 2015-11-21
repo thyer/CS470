@@ -106,3 +106,10 @@ class OccupancyGrid(object):
     
     def get_distance(self, point1, point2):
         return math.sqrt((point1[0] - point2[0]) ** 2 + (point1[1] - point2[1]) ** 2)
+
+    def post_process_point(self, point):
+        point_i, point_j = self.convert_to_grid(point[0], point[1])
+        if self.get_point_density(point_i, point_j) > .05:
+            self.temp_target_points.append((point_i, point_j))
+        else:
+            print "Target point successfully assessed: " + str(point)

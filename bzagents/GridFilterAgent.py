@@ -14,10 +14,37 @@ class GridFilterAgent(object):
         self.bzrc = bzrc
         self.occupancy_grid = occupancy_grid
         self.tank_index = tank_index
+        self.next_point = None
+        self.commands = []
+        self.stagnation_clicker = 0
+        self.stagnation_point = (0, 0)
 
     def tick(self):
         self.commands = []
         tank = self.bzrc.get_mytanks()[self.tank_index]
+
+        if self.next_point is None: # we need to get a new traversal point
+            self.next_point = self.occupancy_grid.get_target_point()
+        elif self.occupancy_grid.get_distance(self.next_point, (tank.x, tank.y)) < 5: # we've hit our target
+            self.occupancy_grid.post_process_point(self.next_point)
+            self.next_point = None
+            self.move(0, 0, tank)  # should get the tank to temporarily halt
+        elif self.next_point is not None:   # we've got a point, but haven't hit it yet
+            self.traverse_path(self.next_point, tank)
+
+            # check for stagnation
+            if (tank.x, tank.y) == self.stagnation_point:
+                self.stagnation_clicker += 1
+            else:
+                self.stagnation_point = (tank.x, tank.y)
+                self.stagnation_clicker = 0
+
+            # limit stagnation to 50 ticks
+            if self.stagnation_clicker >= 50:
+                self.occupancy_grid.post_process_point(self.next_point)
+                self.next_point = None
+                self.move(0, 0, tank)
+
         if random.randint(0,10) > 3:
             # TODO: converting to grid coordinates is off by one because the grid is zero-based. Try to put 400 instead of 300 and eventually you'll get an index out of bounds error in the occupancy grid
             self.occupancy_grid.observe(random.randint(-300, 0), random.randint(-300, 0), True)
