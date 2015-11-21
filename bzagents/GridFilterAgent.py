@@ -18,19 +18,25 @@ class GridFilterAgent(object):
         self.commands = []
         self.stagnation_clicker = 0
         self.stagnation_point = (0, 0)
+        self.G_FROB = 0.9
+        self.R_FROB = 0.05
 
     def tick(self):
         self.commands = []
         tank = self.bzrc.get_mytanks()[self.tank_index]
-
+        
+        print "Ticking, tank position is: " + str((tank.x, tank.y))
+        
         if self.next_point is None: # we need to get a new traversal point
-            self.next_point = self.occupancy_grid.get_target_point()
+            self.next_point = self.occupancy_grid.get_target_point(tank.x, tank.y)
         elif self.occupancy_grid.get_distance(self.next_point, (tank.x, tank.y)) < 5: # we've hit our target
             self.occupancy_grid.post_process_point(self.next_point)
             self.next_point = None
             self.move(0, 0, tank)  # should get the tank to temporarily halt
         elif self.next_point is not None:   # we've got a point, but haven't hit it yet
             self.traverse_path(self.next_point, tank)
+            print "Target position is: " + str(self.next_point)
+            print "Distance to target position: " + str(self.occupancy_grid.get_distance(self.next_point, (tank.x, tank.y)))
 
             # check for stagnation
             if (tank.x, tank.y) == self.stagnation_point:
@@ -69,8 +75,9 @@ class GridFilterAgent(object):
     def calculate_goal_force(self, goal, tank):
         x_force = min(goal[0] - tank.x, 200)
         y_force = min(goal[1] - tank.y, 200)
-
-        output = [x_force * self.G_FROB, y_force * self.G_FROB]
+        
+        weighting = min(math.sqrt(x_force ** 2 + y_force ** 2)/40, 1.0)
+        output = [weighting * x_force * self.G_FROB, weighting * y_force * self.G_FROB]
         return output
 
     def calculate_random_force(self, tank):

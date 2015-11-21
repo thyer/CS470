@@ -17,23 +17,29 @@ class OccupancyGrid(object):
     def get_point_density(self, i, j):
         unknown_points = 0
         total_points = 0
+        print "Getting point density for: " + str(i) + ", " + str(j)
+        print "Sensor range of: " + str(self.sensor_range)
         for x in range(self.sensor_range):
             for y in range(self.sensor_range):
-                point_x = i - self.sensor_range/2 + x
-                point_y = j - self.sensor_range/2 + y
-                if self.is_outside_grid_bounds(point_x, point_y):
+                r = i - self.sensor_range/2 + x
+                c = j - self.sensor_range/2 + y
+                if self.is_outside_rc_bounds(r, c):
                     continue
-                elif self.get_gc(point_x, point_y) > .0001 and self.get_gc(point_x, point_y) < .9999:
+                elif self.grid[r][c] > .0001 and self.grid[r][c] < .9999:
                     unknown_points += 1
                     total_points += 1
                 else:
                     total_points += 1
-                    
-        return unknown_points / total_points
-
+        print "Points needing more info: " + str(unknown_points) + ", of total: " + str(total_points)
+        output = unknown_points / total_points
+        return output
+    
+    def is_outside_rc_bounds(self, r, c):
+        return r >= len(self.grid) or r < 0 or c >= len(self.grid) or c < 0
+        
     def is_outside_grid_bounds(self, x, y):
         r, c = self.convert_to_grid(x, y)
-        return r >= len(self.grid) or r < 0 or c >= len(self.grid) or c < 0
+        return is_outside_rc_bound(r, c)
 
     def get_gc(self, x, y):
         r, c = self.convert_to_grid(x, y)
@@ -100,7 +106,8 @@ class OccupancyGrid(object):
             if dist < min_dist:
                 min_point = point
                 min_dist = dist
-
+        
+        self.target_points.remove(min_point)
         min_point = self.convert_to_world(min_point[0], min_point[1])
         return min_point
     
