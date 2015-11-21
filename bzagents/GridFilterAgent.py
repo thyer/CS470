@@ -24,9 +24,11 @@ class GridFilterAgent(object):
     def tick(self):
         self.commands = []
         tank = self.bzrc.get_mytanks()[self.tank_index]
-        
-        print "Ticking, tank position is: " + str((tank.x, tank.y))
-        
+        self.do_movement(tank)
+        self.do_observe()
+        return
+
+    def do_movement(self, tank):
         if self.next_point is None: # we need to get a new traversal point
             self.next_point = self.occupancy_grid.get_target_point(tank.x, tank.y)
         elif self.occupancy_grid.get_distance(self.next_point, (tank.x, tank.y)) < 5: # we've hit our target
@@ -35,8 +37,6 @@ class GridFilterAgent(object):
             self.move(0, 0, tank)  # should get the tank to temporarily halt
         elif self.next_point is not None:   # we've got a point, but haven't hit it yet
             self.traverse_path(self.next_point, tank)
-            print "Target position is: " + str(self.next_point)
-            print "Distance to target position: " + str(self.occupancy_grid.get_distance(self.next_point, (tank.x, tank.y)))
 
             # check for stagnation
             if (tank.x, tank.y) == self.stagnation_point:
@@ -45,19 +45,28 @@ class GridFilterAgent(object):
                 self.stagnation_point = (tank.x, tank.y)
                 self.stagnation_clicker = 0
 
-            # limit stagnation to 50 ticks
-            if self.stagnation_clicker >= 50:
+            # limit stagnation to 20 ticks
+            if self.stagnation_clicker >= 20:
                 self.occupancy_grid.post_process_point(self.next_point)
                 self.next_point = None
                 self.move(0, 0, tank)
-
+                self.stagnation_clicker = 0
+    
+    def do_observe(self):
+        pos, ping_grid = self.bzrc.get_occgrid(self.tank_index)
+        print str(pos)
+        print "Grid length: " + str(len(ping_grid)) + " by " + str(len(ping_grid[0]))
+        for x in range(len(ping_grid)):
+            output = ""
+            for y in range(len(ping_grid[x])):
+                output += str(ping_grid[x][y])
+            print output
         if random.randint(0,10) > 3:
             # TODO: converting to grid coordinates is off by one because the grid is zero-based. Try to put 400 instead of 300 and eventually you'll get an index out of bounds error in the occupancy grid
             self.occupancy_grid.observe(random.randint(-300, 0), random.randint(-300, 0), True)
         else:
             self.occupancy_grid.observe(random.randint(0, 300), random.randint(0, 300), False)
-        return
-
+    
     def traverse_path(self, next_point, tank):
         forces = []
         x_force = 0
