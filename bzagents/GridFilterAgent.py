@@ -53,19 +53,18 @@ class GridFilterAgent(object):
                 self.stagnation_clicker = 0
     
     def do_observe(self):
+        tank = self.bzrc.get_mytanks()[self.tank_index]
+        if tank.status is 'dead':
+            print "DEAD TANK ALERT"
+            return
         pos, ping_grid = self.bzrc.get_occgrid(self.tank_index)
         print str(pos)
         print "Grid length: " + str(len(ping_grid)) + " by " + str(len(ping_grid[0]))
-        for x in range(len(ping_grid)):
-            output = ""
-            for y in range(len(ping_grid[x])):
-                output += str(ping_grid[x][y])
-            print output
-        if random.randint(0,10) > 3:
-            # TODO: converting to grid coordinates is off by one because the grid is zero-based. Try to put 400 instead of 300 and eventually you'll get an index out of bounds error in the occupancy grid
-            self.occupancy_grid.observe(random.randint(-300, 0), random.randint(-300, 0), True)
-        else:
-            self.occupancy_grid.observe(random.randint(0, 300), random.randint(0, 300), False)
+        overall = ""
+        col = len(ping_grid[0]) - 1
+        for row in range(len(ping_grid)):
+            for col in range(len(ping_grid[row])):
+                self.occupancy_grid.observe(pos[0] + row, pos[1] + col, ping_grid[row][col])
     
     def traverse_path(self, next_point, tank):
         forces = []
@@ -149,13 +148,16 @@ def main():
 
     # Set up the occupancy grid and visualization
     world_size = int(bzrc.get_constants()['worldsize'])
-    occupancy_grid = OccupancyGrid(world_size, .97, .1, 100)
+    occupancy_grid = OccupancyGrid(world_size + 1, .97, .1, 100)
     viz = GFViz(occupancy_grid, world_size)
 
     # Create our army
     agents = []
-    agent = GridFilterAgent(bzrc, occupancy_grid, 0)
-    agents.append(agent)
+    index = 0
+    for tank in bzrc.get_mytanks():
+        agent = GridFilterAgent(bzrc, occupancy_grid, index)
+        agents.append(agent)
+        index += 1
 
     # Run the agent
     try:
