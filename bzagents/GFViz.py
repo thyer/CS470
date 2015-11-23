@@ -22,7 +22,7 @@ class GFViz(object):
         glutInitWindowPosition(0, 0)
         window = glutCreateWindow("Grid filter")
         glutDisplayFunc(self.draw_grid)
-        glViewport(width, 0, width, height)
+        glViewport(0, height, width, height)
         glMatrixMode(GL_PROJECTION)
         glLoadIdentity()
         glMatrixMode(GL_MODELVIEW)
@@ -31,7 +31,7 @@ class GFViz(object):
     def draw_grid(self):
         # This assumes you are using a numpy array for your grid
         width, height = self.grid.shape
-        glPixelZoom(-1.0, 1.0)
+        glPixelZoom(1.0, -1.0)
         glRasterPos2f(-1, -1)
         glDrawPixels(width, height, GL_LUMINANCE, GL_FLOAT, self.grid)
         glFlush()
