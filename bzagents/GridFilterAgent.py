@@ -20,6 +20,7 @@ class GridFilterAgent(object):
         self.stagnation_point = (0, 0)
         self.G_FROB = 0.9
         self.R_FROB = 0.05
+        self.ticks = 0
 
     def tick(self):
         self.commands = []
@@ -46,20 +47,20 @@ class GridFilterAgent(object):
                 self.stagnation_clicker = 0
 
             # limit stagnation to 20 ticks
-            if self.stagnation_clicker >= 20:
+            if self.stagnation_clicker >= 15:
                 self.occupancy_grid.post_process_point(self.next_point)
                 self.next_point = None
                 self.move(0, 0, tank)
                 self.stagnation_clicker = 0
     
     def do_observe(self):
+        self.ticks += 1
+        if not self.ticks % 3 == 0:
+            return
         tank = self.bzrc.get_mytanks()[self.tank_index]
-        if tank.status is 'dead':
-            print "DEAD TANK ALERT"
+        if "dead" in tank.status:
             return
         pos, ping_grid = self.bzrc.get_occgrid(self.tank_index)
-        print str(pos)
-        print "Grid length: " + str(len(ping_grid)) + " by " + str(len(ping_grid[0]))
         overall = ""
         col = len(ping_grid[0]) - 1
         for row in range(len(ping_grid)):
@@ -148,23 +149,26 @@ def main():
 
     # Set up the occupancy grid and visualization
     world_size = int(bzrc.get_constants()['worldsize'])
-    occupancy_grid = OccupancyGrid(world_size + 1, .97, .1, 100)
+    occupancy_grid = OccupancyGrid(world_size + 1, .97, .1, 50)
     viz = GFViz(occupancy_grid, world_size)
 
     # Create our army
     agents = []
     index = 0
-    for tank in bzrc.get_mytanks():
+    for tank in range(len(bzrc.get_mytanks())-5):
         agent = GridFilterAgent(bzrc, occupancy_grid, index)
         agents.append(agent)
         index += 1
 
     # Run the agent
     try:
+        counter = 0
         while True:  # TODO: While our occupancy grid isn't "good enough"
             for agent in agents:
                 agent.tick()
-            viz.update_grid(occupancy_grid.get_grid())
+            if counter % 10 == 0:
+                viz.update_grid(occupancy_grid.get_grid())
+            counter += 1
 
         # Our occupancy grid is "good enough", enter an eternal loop so the visualization will be visible
         viz.loop_eternally()

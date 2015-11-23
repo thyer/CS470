@@ -116,7 +116,7 @@ class OccupancyGrid(object):
 
     def post_process_point(self, point):
         point_i, point_j = self.convert_to_grid(point[0], point[1])
-        if self.get_point_density(point_i, point_j) > .05:
+        if self.get_point_density(point_i, point_j) > .15:
             self.temp_target_points.append((point_i, point_j))
         else:
             print "Target point successfully assessed: " + str(point)
