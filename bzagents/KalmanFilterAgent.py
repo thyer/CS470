@@ -17,8 +17,8 @@ class KalmanFilterAgent(object):
         
         # constant matrices
         self.sigma_x = NP.matrix('0.1 0 0 0 0 0;' + \
-        '0 0.1 0 0 0 0; 0 0 10 0 0 0; 0 0 0 0.1 0 0;' + \
-        '0 0 0 0 0.1 0; 0 0 0 0 0 10')
+        '0 0.1 0 0 0 0; 0 0 100 0 0 0; 0 0 0 0.1 0 0;' + \
+        '0 0 0 0 0.1 0; 0 0 0 0 0 100')
         self.sigma_z = NP.matrix('25.0 0; 0 25')
         self.H = NP.matrix('1.0 0 0 0 0 0; 0 0 0 1 0 0')
         
@@ -43,7 +43,7 @@ class KalmanFilterAgent(object):
         # print "tick"
         
         # update our F matrix depending on how much time has passed
-        d_time = 1 # TODO: figure out how to determine the time passed
+        d_time = 0.0001 # TODO: figure out how to determine the time passed
         if d_time != self.delta_time:
             self.update_f_matrix(d_time)
             selfdelta_time = d_time
@@ -61,7 +61,15 @@ class KalmanFilterAgent(object):
         kalman_gain = self.calc_kalman_gain(f_sigma_ft)
         mu_current = self.F * self.mu_t + kalman_gain * (z_current - self.H * self.F * self.mu_t)
         sigma_current = self.calculate_sigma_current(f_sigma_ft, kalman_gain)
-        print "sigma_current: " + str(sigma_current)
+        x = mu_current[0,0]
+        y = mu_current[3,0]
+        u_x = sigma_current[0,0]
+        u_y = sigma_current[3,3]
+        print "Estimation: " + str(x) + ", " + str(y)
+        # print "Full sigma matrix: " + str(sigma_current)
+        print "Uncertainty: " + str(u_x) + ", " + str(u_y)
+        self.mu_t = mu_current
+        self.sigma_t = sigma_current
 
     def calc_kalman_gain(self, f_sigma_ft):
         top = f_sigma_ft * self.H.T
