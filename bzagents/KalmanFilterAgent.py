@@ -3,17 +3,21 @@
 import sys
 import random
 import math
+import time
 import numpy as NP
 
 from bzrc import BZRC, Command
+from KalmanViz import KalmanViz
 
 
 class KalmanFilterAgent(object):
-    def __init__(self, bzrc, tank_index):
+    def __init__(self, bzrc, tank_index, viz):
         print "Constructing KalmanFilterAgent"
         self.bzrc = bzrc
         self.tank_index = tank_index
+        self.viz = viz
         self.commands = []
+        self.counter = 0
         
         # constant matrices
         self.sigma_x = NP.matrix('0.1 0 0 0 0 0;' + \
@@ -38,12 +42,10 @@ class KalmanFilterAgent(object):
         # other tracking variables
         self.delta_time = 0
 
-    def tick(self):
+    def tick(self, d_time):
         self.commands = []
-        # print "tick"
-        
+
         # update our F matrix depending on how much time has passed
-        d_time = 0.0001 # TODO: figure out how to determine the time passed
         if d_time != self.delta_time:
             self.update_f_matrix(d_time)
             selfdelta_time = d_time
@@ -53,7 +55,15 @@ class KalmanFilterAgent(object):
         x, y = enemy_tank.x, enemy_tank.y
         z_current = NP.matrix([[x], [y]])
         self.update_position_estimate(z_current)
-        
+
+        if self.counter % 100 == 0: # if we update the visualizations too often, it bogs down the entire program
+            mu_x = self.mu_t.item(0)
+            mu_y = self.mu_t.item(3)
+            sig_x = self.sigma_t.item((0, 0))
+            sig_y = self.sigma_t.item((3, 3))
+            rho = self.sigma_t.item((0, 3))
+            self.viz.update_values(sig_x, sig_y, rho, mu_x, mu_y)
+        self.counter += 1
         return
 
     def update_position_estimate(self, z_current):
@@ -76,6 +86,7 @@ class KalmanFilterAgent(object):
         bottom = self.H * (f_sigma_ft + self.sigma_x) * self.H.T + self.sigma_z
         kalman_gain = top * bottom.I
         return kalman_gain
+
     def update_f_matrix(self, delta_time):
         self.F[0,1] = delta_time
         self.F[0,2] = (delta_time ** 2) / 2
@@ -88,6 +99,8 @@ class KalmanFilterAgent(object):
         left = NP.identity(6) - kalman_gain * self.H
         right = f_sigma_ft + self.sigma_x
         return left * right
+
+
 #####################
 ### MAIN FUNCTION ###
 #####################
@@ -107,25 +120,32 @@ def main():
     # bzrc = BZRC(host, int(port), debug=True)
     bzrc = BZRC(host, int(port))
 
+    world_size = int(bzrc.get_constants()['worldsize'])
+    viz = KalmanViz(world_size)
+
     # Create our army
+    # TODO: Are we only dealing with one agent on our team? If not, we need to be careful about visualizations!
+
     agents = []
     index = 0
-    for tank in range(len(bzrc.get_mytanks())):
-        agent = KalmanFilterAgent(bzrc, index)
-        agents.append(agent)
-        index += 1
+    agent = KalmanFilterAgent(bzrc, index, viz)
+    agents.append(agent)
+
+    prev_time = time.time()
 
     # Run the agent
     try:
-        counter = 0
-        while True:  # TODO: While our occupancy grid isn't "good enough"
+        while True:
+            time_diff = time.time() - prev_time
+            prev_time = time.time()
             for agent in agents:
-                agent.tick()
-            counter += 1
+                agent.tick(time_diff)
+
 
     except KeyboardInterrupt:
         print "Exiting due to keyboard interrupt."
         bzrc.close()
+        viz.destroy()
 
 if __name__ == '__main__':
     main()
