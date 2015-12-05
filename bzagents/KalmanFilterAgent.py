@@ -15,12 +15,20 @@ class KalmanFilterAgent(object):
         self.tank_index = tank_index
         self.commands = []
         self.ticks = 0
-        self.mu = NP.matrix('0 0 0 0 0 0')
+        self.mu_t = NP.matrix('0.0 0 0 0 0 0')
         self.sigma_x = NP.matrix('0.1 0 0 0 0 0;' + \
         '0 0.1 0 0 0 0; 0 0 10 0 0 0; 0 0 0 0.1 0 0;' + \
         '0 0 0 0 0.1 0; 0 0 0 0 0 10')
-        self.sigma_x = NP.matrix('25 0; 0 25')
-        self.H = NP.matrix('1 0 0 0 0 0; 0 0 0 1 0 0')
+        self.sigma_z = NP.matrix('25.0 0; 0 25')
+        self.sigma_t = NP.matrix('100.0 0 0 0 0 0;' + \
+        '0 0.1 0 0 0 0; 0 0 0.1 0 0 0; 0 0 0 100 0 0;' + \
+        '0 0 0 0 0.1 0; 0 0 0 0 0 0.1')
+        self.H = NP.matrix('1.0 0 0 0 0 0; 0 0 0 1 0 0')
+        self.F = NP.matrix('0.0 0.0 0.0 0 0 0; 0 0 0 0 0 0; 0 0 0 0 0 0;' + \
+        '0 0 0 0 0 0; 0 0 0 0 0 0; 0 0 0 0 0 0')
+        c = .01
+        self.F[2, 1] = c
+        self.F[5, 4] = c
 
     def tick(self):
         self.ticks += 1
