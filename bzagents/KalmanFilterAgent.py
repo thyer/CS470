@@ -18,24 +18,27 @@ class KalmanFilterAgent(object):
         self.viz = viz
         self.commands = []
         self.counter = 0
+        tank = self.bzrc.get_mytanks()[self.tank_index]
+        self.tank_pos = (tank.x, tank.y)
+        self.shot_speed = int(self.bzrc.get_constants()['shotspeed'])
         
         # constant matrices
-        self.sigma_x = NP.matrix('0.1 0 0 0 0 0;' + \
-        '0 0.1 0 0 0 0; 0 0 100 0 0 0; 0 0 0 0.1 0 0;' + \
+        self.sigma_x = NP.matrix('0.1 0.2 0 0 0 0;' + \
+        '.2 0.1 0 0 0 0; 0 0 100 0 0 0; 0 0 0 0.1 0 0;' + \
         '0 0 0 0 0.1 0; 0 0 0 0 0 100')
         self.sigma_z = NP.matrix('25.0 0; 0 25')
         self.H = NP.matrix('1.0 0 0 0 0 0; 0 0 0 1 0 0')
         
         # instantiated matrices
         self.mu_t = NP.matrix('0.0; 0; 0; 0; 0; 0')
-        self.sigma_t = NP.matrix('100.0 0 0 0 0 0;' + \
-        '0 0.1 0 0 0 0; 0 0 0.1 0 0 0; 0 0 0 100 0 0;' + \
-        '0 0 0 0 0.1 0; 0 0 0 0 0 0.1')
+        self.sigma_t = NP.matrix('500.0 0 0 0 0 0;' + \
+        '0 0.5 0 0 0 0; 0 0 0.1 0 0 0; 0 0 0 500 0 0;' + \
+        '0 0 0 0 0.5 0; 0 0 0 0 0 0.1')
         
         # variable matrix
         self.F = NP.matrix('1.0 0.0 0.0 0 0 0; 0 1 0 0 0 0; 0 0 1 0 0 0;' + \
         '0 0 0 1 0 0; 0 0 0 0 1 0; 0 0 0 0 0 1')
-        c = .01
+        c = 0.01
         self.F[2, 1] = -c
         self.F[5, 4] = -c
         
@@ -64,8 +67,43 @@ class KalmanFilterAgent(object):
             rho = self.sigma_t.item((0, 3))
             self.viz.update_values(sig_x, sig_y, rho, mu_x, mu_y)
         self.counter += 1
+        
+        calc_position = self.calc_position_to_shoot(self.mu_t)
+        # self.move_to_position(calc_position)
+        
         return
 
+    def calc_position_to_shoot(self, mu_t):
+        pos_0 = mu_t.item(0), mu_t.item(3)
+        d_0 = self.calc_distance(self.tank_pos, pos_0)
+        t_0 = d_0/self.shot_speed
+        best_guess_pos = pos_0
+        best_guess_t = t_0
+        
+        next_estimate = self.predict_mu_after(best_guess_t)
+        pos_next = next_estimate.item(0), next_estimate.item(3)
+        d_next = self.calc_distance(self.tank_pos, pos_next)
+        t_next = d_next/self.shot_speed
+        
+        while(abs(t_next - best_guess_t) > 0.01):
+            best_guess_pos = pos_next
+            best_guess_t = t_next
+            next_estimate = self.predict_mu_after(best_guess_t)
+            pos_next = next_estimate.item(0), next_estimate.item(3)
+            d_next = self.calc_distance(self.tank_pos, pos_next)
+            t_next = d_next/self.shot_speed
+        return best_guess_pos
+        
+    def predict_mu_after(self, delta_t):
+        print "Delta_time = " + str(delta_t)
+        self.update_f_matrix(delta_t)
+        prediction = self.F * self.mu_t
+        return prediction
+    
+    def calc_distance(self, pos0, pos1):
+        print "pos0: " + str(pos0) + ", pos1: " + str(pos1)
+        return math.sqrt((pos0[0]-pos1[0]) ** 2 + (pos0[1]-pos1[1]) ** 2)
+        
     def update_position_estimate(self, z_current):
         f_sigma_ft = self.F * self.sigma_t * self.F.T
         kalman_gain = self.calc_kalman_gain(f_sigma_ft)
