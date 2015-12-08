@@ -12,21 +12,21 @@ from KalmanViz import KalmanViz
 
 class KalmanFilterAgent(object):
     def __init__(self, bzrc, tank_index, viz):
-        print "Constructing KalmanFilterAgent"
         self.bzrc = bzrc
         self.tank_index = tank_index
         self.viz = viz
-        self.commands = []
         self.counter = 0
+
         tank = self.bzrc.get_mytanks()[self.tank_index]
         self.tank_pos = (tank.x, tank.y)
+        self.current_angle = tank.angle
         self.shot_speed = int(self.bzrc.get_constants()['shotspeed'])
-        
+
         # constant matrices
         self.sigma_x = NP.matrix('0.1 0.2 0 0 0 0;' + \
-        '.2 0.1 0 0 0 0; 0 0 100 0 0 0; 0 0 0 0.1 0 0;' + \
-        '0 0 0 0 0.1 0; 0 0 0 0 0 100')
-        self.sigma_z = NP.matrix('25.0 0; 0 25')
+        '0.2 0.1 0 0 0.1 0; 0 0 5 0 0 0; 0 0 0 0.1 0.2 0;' + \
+        '0 0.1 0 0.2 0.1 0; 0 0 0 0 0 5')
+        self.sigma_z = NP.matrix('50.0 0; 0 50')
         self.H = NP.matrix('1.0 0 0 0 0 0; 0 0 0 1 0 0')
         
         # instantiated matrices
@@ -46,7 +46,11 @@ class KalmanFilterAgent(object):
         self.delta_time = 0
 
     def tick(self, d_time):
-        self.commands = []
+        enemy_tank = self.bzrc.get_othertanks()[0]
+
+        if "dead" in enemy_tank.status:
+            self.__init__(self.bzrc, self.tank_index, self.viz)
+            return
 
         # update our F matrix depending on how much time has passed
         if d_time != self.delta_time:
@@ -54,7 +58,7 @@ class KalmanFilterAgent(object):
             selfdelta_time = d_time
             
         # get our updated location estimate and standard deviation
-        enemy_tank = self.bzrc.get_othertanks()[0]
+
         x, y = enemy_tank.x, enemy_tank.y
         z_current = NP.matrix([[x], [y]])
         self.update_position_estimate(z_current)
@@ -67,42 +71,60 @@ class KalmanFilterAgent(object):
             rho = self.sigma_t.item((0, 3))
             self.viz.update_values(sig_x, sig_y, rho, mu_x, mu_y)
         self.counter += 1
-        
+
         calc_position = self.calc_position_to_shoot(self.mu_t)
-        # self.move_to_position(calc_position)
-        
+        if self.calc_distance(self.tank_pos, calc_position) > 350:  # outside our shot range
+            return
+
+        self.move_to_position(calc_position)
         return
 
     def calc_position_to_shoot(self, mu_t):
         pos_0 = mu_t.item(0), mu_t.item(3)
         d_0 = self.calc_distance(self.tank_pos, pos_0)
-        t_0 = d_0/self.shot_speed
-        best_guess_pos = pos_0
-        best_guess_t = t_0
-        
-        next_estimate = self.predict_mu_after(best_guess_t)
-        pos_next = next_estimate.item(0), next_estimate.item(3)
-        d_next = self.calc_distance(self.tank_pos, pos_next)
-        t_next = d_next/self.shot_speed
-        
-        while(abs(t_next - best_guess_t) > 0.01):
-            best_guess_pos = pos_next
-            best_guess_t = t_next
-            next_estimate = self.predict_mu_after(best_guess_t)
-            pos_next = next_estimate.item(0), next_estimate.item(3)
-            d_next = self.calc_distance(self.tank_pos, pos_next)
-            t_next = d_next/self.shot_speed
-        return best_guess_pos
+        t_0 = d_0 / self.shot_speed
+        predicted_mu = self.predict_mu_after(t_0)
+        return predicted_mu.item(0), predicted_mu.item(3)
         
     def predict_mu_after(self, delta_t):
-        print "Delta_time = " + str(delta_t)
+        delta_t = delta_t * 1.4
         self.update_f_matrix(delta_t)
         prediction = self.F * self.mu_t
         return prediction
     
     def calc_distance(self, pos0, pos1):
-        print "pos0: " + str(pos0) + ", pos1: " + str(pos1)
         return math.sqrt((pos0[0]-pos1[0]) ** 2 + (pos0[1]-pos1[1]) ** 2)
+
+    def move_to_position(self, pos):
+        shooting_angle = math.atan2(pos[1] - self.tank_pos[1], pos[0] - self.tank_pos[0])
+        self.current_angle = self.bzrc.get_mytanks()[self.tank_index].angle
+
+        angvel = self.calculate_angvel(shooting_angle) * 1.3
+        should_shoot = False
+        if abs(self.current_angle - shooting_angle) < 0.001:
+            should_shoot = True
+            # angvel = 0
+        command = Command(self.tank_index, 0, angvel, should_shoot)
+        self.bzrc.do_commands([command])
+
+    def calculate_angvel(self, shooting_angle):
+        target = self.two_pi_normalize(shooting_angle)
+        current = self.two_pi_normalize(self.current_angle)
+        return self.normalize_angle(target - current)
+
+    def two_pi_normalize(self, angle):
+        """Make any angle between 0 to 2pi."""
+        angle += 2 * math.pi
+        return angle % (2 * math.pi)
+
+    def normalize_angle(self, angle):
+        """Make any angle be between +/- pi."""
+        angle -= 2 * math.pi * int (angle / (2 * math.pi))
+        if angle <= -math.pi:
+            angle += 2 * math.pi
+        elif angle > math.pi:
+            angle -= 2 * math.pi
+        return angle
         
     def update_position_estimate(self, z_current):
         f_sigma_ft = self.F * self.sigma_t * self.F.T
@@ -113,9 +135,6 @@ class KalmanFilterAgent(object):
         y = mu_current[3,0]
         u_x = sigma_current[0,0]
         u_y = sigma_current[3,3]
-        print "Estimation: " + str(x) + ", " + str(y)
-        # print "Full sigma matrix: " + str(sigma_current)
-        print "Uncertainty: " + str(u_x) + ", " + str(u_y)
         self.mu_t = mu_current
         self.sigma_t = sigma_current
 

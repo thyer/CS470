@@ -14,7 +14,7 @@ class FigureEightAgent(object):
         self.commands = []
         self.angvel_increasing = False
         self.angvel = 0
-        self.velocity = 1.00
+        self.velocity = 0.3
         self.ticks = 0
 
     def tick(self):
@@ -23,12 +23,12 @@ class FigureEightAgent(object):
         print "Ticks: " + str(self.ticks)
         print "Angvel: " + str(self.angvel) + ", Velocity: " + str(self.velocity)
         if self.angvel_increasing:
-            self.angvel += 0.04
-            if self.angvel > .90:
+            self.angvel += 0.01
+            if self.angvel > 2.5:
                 self.angvel_increasing = False
         else:
-            self.angvel -= 0.04
-            if self.angvel < -.90:
+            self.angvel -= 0.01
+            if self.angvel < -2.5:
                 self.angvel_increasing = True
         if self.ticks % 10 == 0:
             print "tick!"
