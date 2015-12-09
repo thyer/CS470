@@ -38,7 +38,7 @@ class KalmanFilterAgent(object):
         # variable matrix
         self.F = NP.matrix('1.0 0.0 0.0 0 0 0; 0 1 0 0 0 0; 0 0 1 0 0 0;' + \
         '0 0 0 1 0 0; 0 0 0 0 1 0; 0 0 0 0 0 1')
-        c = 0.01
+        c = 0.00
         self.F[2, 1] = -c
         self.F[5, 4] = -c
         
@@ -55,7 +55,7 @@ class KalmanFilterAgent(object):
         # update our F matrix depending on how much time has passed
         if d_time != self.delta_time:
             self.update_f_matrix(d_time)
-            selfdelta_time = d_time
+            self.delta_time = d_time
             
         # get our updated location estimate and standard deviation
 
@@ -87,7 +87,7 @@ class KalmanFilterAgent(object):
         return predicted_mu.item(0), predicted_mu.item(3)
         
     def predict_mu_after(self, delta_t):
-        delta_t = delta_t * 1.4
+        delta_t = delta_t
         self.update_f_matrix(delta_t)
         prediction = self.F * self.mu_t
         return prediction
