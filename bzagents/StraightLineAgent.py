@@ -13,14 +13,10 @@ class StraightLineAgent(object):
     def __init__(self, bzrc, tank_index):
         self.bzrc = bzrc
         self.tank_index = tank_index
-        self.commands = []
 
     def tick(self):
-        self.commands = []
         command = Command(self.tank_index, 4, 0, False)
-        self.commands.append(command)
-        if self.commands:
-            self.bzrc.do_commands(self.commands)
+        self.bzrc.do_commands([command])
         return
 
 #####################
@@ -48,14 +44,13 @@ def main():
     for tank in range(len(bzrc.get_mytanks())):
         agent = StraightLineAgent(bzrc, index)
         agents.append(agent)
+        index += 1
 
     # Run the agent
     try:
-        counter = 0
-        while True:  # TODO: While our occupancy grid isn't "good enough"
+        while True:
             for agent in agents:
                 agent.tick()
-            counter += 1
 
     except KeyboardInterrupt:
         print "Exiting due to keyboard interrupt."

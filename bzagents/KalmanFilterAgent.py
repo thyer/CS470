@@ -23,24 +23,33 @@ class KalmanFilterAgent(object):
         self.shot_speed = int(self.bzrc.get_constants()['shotspeed'])
 
         # constant matrices
-        self.sigma_x = NP.matrix('0.1 0.2 0 0 0 0;' + \
-        '0.2 0.1 0 0 0.1 0; 0 0 5 0 0 0; 0 0 0 0.1 0.2 0;' + \
-        '0 0.1 0 0.2 0.1 0; 0 0 0 0 0 5')
-        self.sigma_z = NP.matrix('50.0 0; 0 50')
-        self.H = NP.matrix('1.0 0 0 0 0 0; 0 0 0 1 0 0')
+        self.sigma_x = NP.matrix('0.1 0.2 0 0 0 0;' +
+                                 '0.2 0.1 0 0 0.1 0;' +
+                                 '0 0 5 0 0 0;' +
+                                 '0 0 0 0.1 0.2 0;' +
+                                 '0 0.1 0 0.2 0.1 0; ' +
+                                 '0 0 0 0 0 5')
+        self.sigma_z = NP.matrix('50.0 0;' +
+                                 '0 50')
+        self.H = NP.matrix('1.0 0 0 0 0 0;' +
+                           '0 0 0 1 0 0')
         
         # instantiated matrices
         self.mu_t = NP.matrix('0.0; 0; 0; 0; 0; 0')
-        self.sigma_t = NP.matrix('500.0 0 0 0 0 0;' + \
-        '0 0.5 0 0 0 0; 0 0 0.1 0 0 0; 0 0 0 500 0 0;' + \
-        '0 0 0 0 0.5 0; 0 0 0 0 0 0.1')
+        self.sigma_t = NP.matrix('500.0 0 0 0 0 0;' +
+                                 '0 0.5 0 0 0 0;' +
+                                 '0 0 0.1 0 0 0;' +
+                                 '0 0 0 500 0 0;' +
+                                 '0 0 0 0 0.5 0;' +
+                                 '0 0 0 0 0 0.1')
         
         # variable matrix
-        self.F = NP.matrix('1.0 0.0 0.0 0 0 0; 0 1 0 0 0 0; 0 0 1 0 0 0;' + \
-        '0 0 0 1 0 0; 0 0 0 0 1 0; 0 0 0 0 0 1')
-        c = 0.00
-        self.F[2, 1] = -c
-        self.F[5, 4] = -c
+        self.F = NP.matrix('1.0 0.0 0.0 0 0 0;'
+                           '0 1 0 0 0 0;' +
+                           '0 0 1 0 0 0;' +
+                           '0 0 0 1 0 0;' +
+                           '0 0 0 0 1 0;' +
+                           '0 0 0 0 0 1')
         
         # other tracking variables
         self.delta_time = 0
@@ -58,12 +67,12 @@ class KalmanFilterAgent(object):
             self.delta_time = d_time
             
         # get our updated location estimate and standard deviation
-
         x, y = enemy_tank.x, enemy_tank.y
         z_current = NP.matrix([[x], [y]])
         self.update_position_estimate(z_current)
 
-        if self.counter % 100 == 0: # if we update the visualizations too often, it bogs down the entire program
+        # if we update the visualizations too often, it bogs down the entire program
+        if self.counter % 100 == 0:
             mu_x = self.mu_t.item(0)
             mu_y = self.mu_t.item(3)
             sig_x = self.sigma_t.item((0, 0))
@@ -72,10 +81,10 @@ class KalmanFilterAgent(object):
             self.viz.update_values(sig_x, sig_y, rho, mu_x, mu_y)
         self.counter += 1
 
+        # calculate the position we should shoot at. move and shoot accordingly
         calc_position = self.calc_position_to_shoot(self.mu_t)
         if self.calc_distance(self.tank_pos, calc_position) > 350:  # outside our shot range
             return
-
         self.move_to_position(calc_position)
         return
 
@@ -103,7 +112,7 @@ class KalmanFilterAgent(object):
         should_shoot = False
         if abs(self.current_angle - shooting_angle) < 0.001:
             should_shoot = True
-            # angvel = 0
+
         command = Command(self.tank_index, 0, angvel, should_shoot)
         self.bzrc.do_commands([command])
 
@@ -177,16 +186,12 @@ def main():
     # bzrc = BZRC(host, int(port), debug=True)
     bzrc = BZRC(host, int(port))
 
+    # initialize the visualization stuff
     world_size = int(bzrc.get_constants()['worldsize'])
     viz = KalmanViz(world_size)
 
-    # Create our army
-    # TODO: Are we only dealing with one agent on our team? If not, we need to be careful about visualizations!
-
-    agents = []
-    index = 0
-    agent = KalmanFilterAgent(bzrc, index, viz)
-    agents.append(agent)
+    # create our agent (just assume it's the first tank on our team)
+    agent = KalmanFilterAgent(bzrc, 0, viz)
 
     prev_time = time.time()
 
@@ -195,9 +200,7 @@ def main():
         while True:
             time_diff = time.time() - prev_time
             prev_time = time.time()
-            for agent in agents:
-                agent.tick(time_diff)
-
+            agent.tick(time_diff)
 
     except KeyboardInterrupt:
         print "Exiting due to keyboard interrupt."

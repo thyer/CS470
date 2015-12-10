@@ -11,17 +11,11 @@ class FigureEightAgent(object):
     def __init__(self, bzrc, tank_index):
         self.bzrc = bzrc
         self.tank_index = tank_index
-        self.commands = []
         self.angvel_increasing = False
         self.angvel = 0
         self.velocity = 0.8
-        self.ticks = 0
 
     def tick(self):
-        self.ticks += 1
-        self.commands = []
-        print "Ticks: " + str(self.ticks)
-        print "Angvel: " + str(self.angvel) + ", Velocity: " + str(self.velocity)
         if self.angvel_increasing:
             self.angvel += 0.01
             if self.angvel > 5.5:
@@ -30,13 +24,9 @@ class FigureEightAgent(object):
             self.angvel -= 0.01
             if self.angvel < -5.5:
                 self.angvel_increasing = True
-        if self.ticks % 10 == 0:
-            print "tick!"
+
         command = Command(self.tank_index, self.velocity, self.angvel, False)
-        self.commands.append(command)
-        
-        if self.commands:
-            self.bzrc.do_commands(self.commands)
+        self.bzrc.do_commands([command])
         return
 
 
@@ -69,11 +59,9 @@ def main():
 
     # Run the agent
     try:
-        counter = 0
-        while True:  # TODO: While our occupancy grid isn't "good enough"
+        while True:
             for agent in agents:
                 agent.tick()
-            counter += 1
 
     except KeyboardInterrupt:
         print "Exiting due to keyboard interrupt."
